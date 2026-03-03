@@ -4,18 +4,18 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, Plus, Copy, Check, Users } from "lucide-react";
 import { EncryptedValue } from "@/components/shared/EncryptedValue";
-import { mockEmployees } from "@/lib/mock-data";
 import type { Employee } from "@/lib/mock-data";
 
 interface EmployeeTableProps {
+  employees: Employee[];
   onAddEmployee: () => void;
 }
 
-export function EmployeeTable({ onAddEmployee }: EmployeeTableProps) {
+export function EmployeeTable({ employees, onAddEmployee }: EmployeeTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
 
-  const filteredEmployees = mockEmployees.filter(
+  const filteredEmployees = employees.filter(
     (emp) =>
       emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -50,7 +50,7 @@ export function EmployeeTable({ onAddEmployee }: EmployeeTableProps) {
                 Employees
               </h2>
               <p className="text-xs text-[var(--text-muted)]">
-                {mockEmployees.length} members &middot; Salaries encrypted
+                {employees.length} members &middot; Salaries encrypted
               </p>
             </div>
           </div>

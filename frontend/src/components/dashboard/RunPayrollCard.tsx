@@ -1,18 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Zap, Play, Lock } from "lucide-react";
+import { Zap, Play } from "lucide-react";
 import { EncryptedValue } from "@/components/shared/EncryptedValue";
-import { mockEmployees } from "@/lib/mock-data";
 
 interface RunPayrollCardProps {
   onExecute: () => void;
+  activeCount: number;
 }
 
-export function RunPayrollCard({ onExecute }: RunPayrollCardProps) {
-  const activeCount = mockEmployees.filter(
-    (e) => e.status === "active"
-  ).length;
+export function RunPayrollCard({ onExecute, activeCount }: RunPayrollCardProps) {
 
   return (
     <div className="accent-card overflow-hidden">

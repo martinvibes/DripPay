@@ -31,6 +31,11 @@ export default function EmployeePage() {
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [isBalanceRevealed, setIsBalanceRevealed] = useState(false);
   const [isDecrypting, setIsDecrypting] = useState(false);
+  const [balance, setBalance] = useState(12500);
+
+  const handleWithdraw = (amount: number) => {
+    setBalance((prev) => Math.max(0, prev - amount));
+  };
 
   const view: View = !isConnected
     ? "connect"
@@ -255,7 +260,7 @@ export default function EmployeePage() {
                 transition={{ delay: 0.4, duration: 0.5 }}
                 className="space-y-6"
               >
-                <WithdrawCard />
+                <WithdrawCard balance={balance} onWithdraw={handleWithdraw} />
                 <PrivacyInfo />
                 <OrgInfo
                   orgName={selectedOrg.name}

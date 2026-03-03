@@ -3,10 +3,12 @@
 import { motion } from "framer-motion";
 import { Building2, Users, Shield, TrendingUp } from "lucide-react";
 import { fadeUpSmall, staggerFast } from "@/lib/animations";
-import { mockEmployees, payrollHistory } from "@/lib/mock-data";
+import { payrollHistory } from "@/lib/mock-data";
 
 interface StatCardsProps {
   orgName?: string;
+  employeeCount?: number;
+  activeCount?: number;
 }
 
 /** Mini sparkline SVG — gives each card a visual pulse */
@@ -77,7 +79,7 @@ const sparkData = {
   growth: [10, 18, 22, 30, 35, 42],
 };
 
-const getStatCards = (orgName: string) => [
+const getStatCards = (orgName: string, empCount: number, activeCount: number) => [
   {
     icon: Building2,
     label: "Organization",
@@ -88,8 +90,8 @@ const getStatCards = (orgName: string) => [
   {
     icon: Users,
     label: "Employees",
-    value: mockEmployees.length.toString(),
-    sub: `${mockEmployees.filter((e) => e.status === "active").length} active`,
+    value: empCount.toString(),
+    sub: `${activeCount} active`,
     spark: sparkData.employees,
   },
   {
@@ -108,8 +110,8 @@ const getStatCards = (orgName: string) => [
   },
 ];
 
-export function StatCards({ orgName = "My Organization" }: StatCardsProps) {
-  const statCards = getStatCards(orgName);
+export function StatCards({ orgName = "My Organization", employeeCount = 0, activeCount = 0 }: StatCardsProps) {
+  const statCards = getStatCards(orgName, employeeCount, activeCount);
 
   return (
     <motion.div

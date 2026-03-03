@@ -12,8 +12,8 @@ import { RunPayrollCard } from "@/components/dashboard/RunPayrollCard";
 import { PayrollHistory } from "@/components/dashboard/PayrollHistory";
 import { AddEmployeeModal } from "@/components/dashboard/AddEmployeeModal";
 import { PayrollConfirmModal } from "@/components/dashboard/PayrollConfirmModal";
-import { mockEmployerOrgs } from "@/lib/mock-data";
-import type { Organization } from "@/lib/mock-data";
+import { mockEmployerOrgs, mockEmployees } from "@/lib/mock-data";
+import type { Organization, Employee } from "@/lib/mock-data";
 import { fadeUpSmall } from "@/lib/animations";
 import { Star4, CrossMark, Diamond, Dot } from "@/components/shared/Stars";
 
@@ -25,10 +25,53 @@ export default function DashboardPage() {
   const [view, setView] = useState<View>("org-list");
   const [showAddEmployee, setShowAddEmployee] = useState(false);
   const [showPayrollConfirm, setShowPayrollConfirm] = useState(false);
+  const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
+
+  const activeEmployees = employees.filter((e) => e.status === "active");
 
   const handleSelectOrg = (org: Organization) => {
     setSelectedOrg(org);
     setView("dashboard");
+  };
+
+  const handleAddEmployee = (emp: Employee) => {
+    setEmployees((prev) => [...prev, emp]);
+    // Update org employee count
+    if (selectedOrg) {
+      setOrgs((prev) =>
+        prev.map((o) =>
+          o.id === selectedOrg.id
+            ? { ...o, employeeCount: o.employeeCount + 1 }
+            : o
+        )
+      );
+      setSelectedOrg((prev) =>
+        prev ? { ...prev, employeeCount: prev.employeeCount + 1 } : prev
+      );
+    }
+  };
+
+  const handlePayrollExecuted = () => {
+    const today = new Date().toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    // Update last paid for active employees
+    setEmployees((prev) =>
+      prev.map((e) =>
+        e.status === "active" ? { ...e, lastPaid: today } : e
+      )
+    );
+    // Update org last payroll
+    if (selectedOrg) {
+      setOrgs((prev) =>
+        prev.map((o) =>
+          o.id === selectedOrg.id ? { ...o, lastPayroll: today } : o
+        )
+      );
+      setSelectedOrg((prev) => (prev ? { ...prev, lastPayroll: today } : prev));
+    }
   };
 
   const handleCreateOrg = (name: string) => {
@@ -186,10 +229,17 @@ export default function DashboardPage() {
               </motion.div>
             </motion.div>
 
-            <StatCards orgName={selectedOrg.name} />
+            <StatCards
+              orgName={selectedOrg.name}
+              employeeCount={employees.length}
+              activeCount={activeEmployees.length}
+            />
 
             <div className="grid gap-6 lg:grid-cols-3">
-              <EmployeeTable onAddEmployee={() => setShowAddEmployee(true)} />
+              <EmployeeTable
+                employees={employees}
+                onAddEmployee={() => setShowAddEmployee(true)}
+              />
 
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
@@ -199,6 +249,7 @@ export default function DashboardPage() {
               >
                 <RunPayrollCard
                   onExecute={() => setShowPayrollConfirm(true)}
+                  activeCount={activeEmployees.length}
                 />
                 <PayrollHistory />
               </motion.div>
@@ -210,7 +261,11 @@ export default function DashboardPage() {
       {/* Modals */}
       <AnimatePresence>
         {showAddEmployee && (
-          <AddEmployeeModal onClose={() => setShowAddEmployee(false)} />
+          <AddEmployeeModal
+            onClose={() => setShowAddEmployee(false)}
+            onAddEmployee={handleAddEmployee}
+            existingCount={employees.length}
+          />
         )}
       </AnimatePresence>
 
@@ -218,6 +273,8 @@ export default function DashboardPage() {
         {showPayrollConfirm && (
           <PayrollConfirmModal
             onClose={() => setShowPayrollConfirm(false)}
+            onExecute={handlePayrollExecuted}
+            employees={employees}
           />
         )}
       </AnimatePresence>
