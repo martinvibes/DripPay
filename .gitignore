@@ -1,0 +1,17 @@
+# Root-level ignores
+node_modules/
+.DS_Store
+*.log
+.env
+.env.*
+.claude/
+.idea/
+.vscode/
+
+# Ignore frontend build files and dependencies if needed globally,
+# though they're already in their own .gitignore.
+# Adding them here for redundancy and root-level clarity.
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
