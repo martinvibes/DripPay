@@ -4,8 +4,8 @@ export function WithdrawCard() {
   return (
     <div className="glass-card p-6 !hover:transform-none">
       <div className="flex items-center gap-3 mb-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(99,102,241,0.1)]">
-          <Download className="h-5 w-5 text-[var(--accent-secondary)]" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-muted)]">
+          <Download className="h-5 w-5 text-[var(--accent)]" />
         </div>
         <div>
           <h3

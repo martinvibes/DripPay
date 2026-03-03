@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
+import { Web3Provider } from "@/providers/Web3Provider";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -33,7 +34,7 @@ export default function RootLayout({
       <body
         className={`${bricolage.variable} ${jakarta.variable} antialiased`}
       >
-        {children}
+        <Web3Provider>{children}</Web3Provider>
       </body>
     </html>
   );

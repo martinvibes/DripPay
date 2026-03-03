@@ -6,27 +6,27 @@ import { features } from "@/lib/mock-data";
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="section-padding relative mesh-gradient">
-      <div className="relative z-10 mx-auto max-w-[var(--max-width)] px-6">
+    <section id="features" className="section-padding">
+      <div className="mx-auto max-w-[var(--max-width)] px-6">
         {/* Header */}
         <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={stagger}
-          className="mb-16 text-center"
+          className="mb-14 text-center"
         >
           <motion.p
             variants={fadeUp}
             custom={0}
-            className="mb-3 text-sm font-semibold uppercase tracking-widest text-[var(--accent)]"
+            className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]"
           >
             Features
           </motion.p>
           <motion.h2
             variants={fadeUp}
             custom={1}
-            className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl"
+            className="text-3xl font-bold tracking-tight sm:text-4xl"
             style={{ fontFamily: "var(--font-display)" }}
           >
             Privacy by Default
@@ -39,32 +39,21 @@ export function FeaturesSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
           variants={stagger}
-          className="grid gap-6 md:grid-cols-3"
+          className="grid gap-5 md:grid-cols-3"
         >
           {features.map((feature, i) => (
             <motion.div
               key={feature.title}
               variants={fadeUp}
               custom={i}
-              className="glass-card glow-accent-hover group relative overflow-hidden p-8"
+              className="group rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-8 transition-colors hover:border-[var(--border-hover)]"
             >
-              <div
-                className="absolute -top-6 -right-6 h-24 w-24 rounded-full opacity-0 blur-[40px] transition-opacity duration-500 group-hover:opacity-100"
-                style={{ background: feature.accent }}
-              />
-
-              <div
-                className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl"
-                style={{ background: `${feature.accent}12` }}
-              >
-                <feature.icon
-                  className="h-6 w-6"
-                  style={{ color: feature.accent }}
-                />
+              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--accent-muted)]">
+                <feature.icon className="h-5 w-5 text-[var(--accent)]" />
               </div>
 
               <h3
-                className="mb-3 text-xl font-bold"
+                className="mb-2.5 text-lg font-bold"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 {feature.title}

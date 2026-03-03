@@ -118,7 +118,7 @@ export function BalanceCard({
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Fingerprint className="h-4 w-4 text-[var(--accent-secondary)]" />
+              <Fingerprint className="h-4 w-4 text-[var(--text-secondary)]" />
               <span className="text-xs text-[var(--text-secondary)]">
                 Wallet-signed decryption
               </span>

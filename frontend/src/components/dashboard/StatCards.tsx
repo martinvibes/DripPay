@@ -5,38 +5,40 @@ import { Building2, Users, Shield, TrendingUp, MoreHorizontal } from "lucide-rea
 import { fadeUpSmall, staggerFast } from "@/lib/animations";
 import { mockEmployees, payrollHistory } from "@/lib/mock-data";
 
-const statCards = [
+interface StatCardsProps {
+  orgName?: string;
+}
+
+const getStatCards = (orgName: string) => [
   {
     icon: Building2,
     label: "Organization",
-    value: "Acme Corp",
-    sub: "Deployed on Zama devnet",
-    accent: "#00e5a0",
+    value: orgName,
+    sub: "Deployed on Ethereum Sepolia",
   },
   {
     icon: Users,
     label: "Employees",
     value: mockEmployees.length.toString(),
     sub: `${mockEmployees.filter((e) => e.status === "active").length} active`,
-    accent: "#00b4d8",
   },
   {
     icon: Shield,
     label: "Payroll Status",
     value: "Up to date",
     sub: "Last run: Feb 28",
-    accent: "#8b5cf6",
   },
   {
     icon: TrendingUp,
     label: "Total Runs",
     value: payrollHistory.length.toString(),
     sub: "All encrypted",
-    accent: "#f59e0b",
   },
 ];
 
-export function StatCards() {
+export function StatCards({ orgName = "My Organization" }: StatCardsProps) {
+  const statCards = getStatCards(orgName);
+
   return (
     <motion.div
       initial="hidden"
@@ -52,14 +54,8 @@ export function StatCards() {
           className="stat-card group"
         >
           <div className="flex items-start justify-between mb-4">
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-xl"
-              style={{ background: `${stat.accent}10` }}
-            >
-              <stat.icon
-                className="h-5 w-5"
-                style={{ color: stat.accent }}
-              />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-muted)]">
+              <stat.icon className="h-5 w-5 text-[var(--accent)]" />
             </div>
             <MoreHorizontal className="h-4 w-4 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>

@@ -155,12 +155,12 @@ function EmployeeRow({
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
             emp.status === "active"
               ? "bg-[rgba(0,229,160,0.1)] text-[var(--accent)]"
-              : "bg-[rgba(251,191,36,0.1)] text-[#fbbf24]"
+              : "bg-[rgba(255,255,255,0.04)] text-[var(--text-secondary)]"
           }`}
         >
           <div
             className={`h-1.5 w-1.5 rounded-full ${
-              emp.status === "active" ? "bg-[var(--accent)]" : "bg-[#fbbf24]"
+              emp.status === "active" ? "bg-[var(--accent)]" : "bg-[var(--text-secondary)]"
             }`}
           />
           {emp.status}

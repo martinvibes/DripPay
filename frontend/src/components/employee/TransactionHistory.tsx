@@ -43,13 +43,13 @@ export function TransactionHistory({ isRevealed }: TransactionHistoryProps) {
                 className={`flex h-9 w-9 items-center justify-center rounded-xl ${
                   tx.type === "credit"
                     ? "bg-[rgba(0,229,160,0.1)]"
-                    : "bg-[rgba(99,102,241,0.1)]"
+                    : "bg-[rgba(255,255,255,0.04)]"
                 }`}
               >
                 {tx.type === "credit" ? (
                   <ArrowDownRight className="h-4 w-4 text-[var(--accent)]" />
                 ) : (
-                  <ArrowUpRight className="h-4 w-4 text-[var(--accent-secondary)]" />
+                  <ArrowUpRight className="h-4 w-4 text-[var(--text-secondary)]" />
                 )}
               </div>
               <div>
@@ -68,7 +68,7 @@ export function TransactionHistory({ isRevealed }: TransactionHistoryProps) {
                     className={`text-sm font-semibold ${
                       tx.type === "credit"
                         ? "text-[var(--accent)]"
-                        : "text-[var(--accent-secondary)]"
+                        : "text-[var(--text-secondary)]"
                     }`}
                   >
                     {tx.type === "credit" ? "+" : "-"}

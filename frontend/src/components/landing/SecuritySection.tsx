@@ -13,12 +13,9 @@ const SECURITY_POINTS = [
 
 export function SecuritySection() {
   return (
-    <section
-      id="security"
-      className="section-padding relative overflow-hidden"
-    >
-      <div className="relative z-10 mx-auto max-w-[var(--max-width)] px-6">
-        <div className="grid items-center gap-16 lg:grid-cols-2">
+    <section id="security" className="section-padding">
+      <div className="mx-auto max-w-[var(--max-width)] px-6">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
           {/* Left — Text */}
           <motion.div
             initial="hidden"
@@ -29,24 +26,24 @@ export function SecuritySection() {
             <motion.p
               variants={fadeUp}
               custom={0}
-              className="mb-3 text-sm font-semibold uppercase tracking-widest text-[var(--accent)]"
+              className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]"
             >
               Security
             </motion.p>
             <motion.h2
               variants={fadeUp}
               custom={1}
-              className="mb-6 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl"
+              className="mb-5 text-3xl font-bold tracking-tight sm:text-4xl"
               style={{ fontFamily: "var(--font-display)" }}
             >
               Encrypted at
               <br />
-              <span className="gradient-text">Every Layer</span>
+              Every Layer
             </motion.h2>
             <motion.p
               variants={fadeUp}
               custom={2}
-              className="mb-8 max-w-md text-base leading-relaxed text-[var(--text-secondary)]"
+              className="mb-8 max-w-md text-sm leading-relaxed text-[var(--text-secondary)]"
             >
               DripPay uses Zama&apos;s Fully Homomorphic Encryption to perform
               computations on encrypted data. Salaries are never exposed — not
@@ -54,12 +51,10 @@ export function SecuritySection() {
               intended recipient.
             </motion.p>
 
-            <motion.div variants={fadeUp} custom={3} className="space-y-4">
+            <motion.div variants={fadeUp} custom={3} className="space-y-3">
               {SECURITY_POINTS.map((point) => (
-                <div key={point} className="flex items-start gap-3">
-                  <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--accent-muted)]">
-                    <ChevronRight className="h-3 w-3 text-[var(--accent)]" />
-                  </div>
+                <div key={point} className="flex items-start gap-2.5">
+                  <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
                   <span className="text-sm text-[var(--text-secondary)]">
                     {point}
                   </span>
@@ -79,18 +74,18 @@ export function SecuritySection() {
 function CodeSnippet() {
   return (
     <motion.div
-      initial={{ opacity: 0, x: 40 }}
+      initial={{ opacity: 0, x: 30 }}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] as const }}
     >
-      <div className="glass-card overflow-hidden !rounded-2xl">
+      <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-primary)]">
         {/* Tab bar */}
         <div className="flex items-center gap-2 border-b border-[var(--border)] px-4 py-3">
           <div className="flex gap-1.5">
-            <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-            <div className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-            <div className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+            <div className="h-2.5 w-2.5 rounded-full bg-[var(--text-muted)]" />
+            <div className="h-2.5 w-2.5 rounded-full bg-[var(--text-muted)]" />
+            <div className="h-2.5 w-2.5 rounded-full bg-[var(--text-muted)]" />
           </div>
           <span className="ml-3 text-xs text-[var(--text-muted)] font-mono">
             Organization.sol
@@ -117,8 +112,6 @@ function CodeSnippet() {
   );
 }
 
-/* ═══ Code highlighting helpers ═══ */
-
 function CodeLine({
   children,
   delay = 0,
@@ -130,10 +123,10 @@ function CodeLine({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: -8 }}
-      whileInView={{ opacity: dimmed ? 0.35 : 1, x: 0 }}
+      initial={{ opacity: 0, x: -6 }}
+      whileInView={{ opacity: dimmed ? 0.3 : 1, x: 0 }}
       viewport={{ once: true }}
-      transition={{ delay, duration: 0.4 }}
+      transition={{ delay, duration: 0.3 }}
       className={dimmed ? "text-[var(--text-muted)]" : "text-[var(--text-secondary)]"}
     >
       {children}
@@ -142,7 +135,7 @@ function CodeLine({
 }
 
 function Kw({ children }: { children: React.ReactNode }) {
-  return <span className="text-[#c792ea]">{children}</span>;
+  return <span className="text-[#a1a1aa]">{children}</span>;
 }
 
 function Fn({ children }: { children: React.ReactNode }) {
@@ -150,5 +143,5 @@ function Fn({ children }: { children: React.ReactNode }) {
 }
 
 function Var({ children }: { children: React.ReactNode }) {
-  return <span className="text-[#f78c6c]">{children}</span>;
+  return <span className="text-[#e4e4e7]">{children}</span>;
 }

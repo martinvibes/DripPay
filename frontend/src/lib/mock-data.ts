@@ -7,7 +7,6 @@ export interface Feature {
   icon: LucideIcon;
   title: string;
   description: string;
-  accent: string;
 }
 
 export const features: Feature[] = [
@@ -16,21 +15,18 @@ export const features: Feature[] = [
     title: "Encrypted Salaries",
     description:
       "Salary amounts are encrypted using Fully Homomorphic Encryption. Not even validators can see what employees earn.",
-    accent: "#00e5a0",
   },
   {
     icon: Zap,
     title: "Batch Payroll",
     description:
       "Execute payroll for your entire organization in a single encrypted transaction. Fast, efficient, completely private.",
-    accent: "#00b4d8",
   },
   {
     icon: Eye,
     title: "Employee Self-Service",
     description:
       "Employees connect their wallet to decrypt and view only their own balance. No one else can see it — ever.",
-    accent: "#8b5cf6",
   },
 ];
 
