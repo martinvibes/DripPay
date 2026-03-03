@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Plus, Copy, Check, Lock } from "lucide-react";
+import { Search, Plus, Copy, Check, Users } from "lucide-react";
 import { EncryptedValue } from "@/components/shared/EncryptedValue";
 import { mockEmployees } from "@/lib/mock-data";
 import type { Employee } from "@/lib/mock-data";
@@ -38,16 +38,21 @@ export function EmployeeTable({ onAddEmployee }: EmployeeTableProps) {
       <div className="glass-card overflow-hidden !hover:transform-none">
         {/* Header */}
         <div className="flex flex-col gap-4 border-b border-[var(--border)] p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2
-              className="text-lg font-bold"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Employees
-            </h2>
-            <p className="text-xs text-[var(--text-muted)]">
-              {mockEmployees.length} members &middot; Salaries encrypted
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent-muted)]">
+              <Users className="h-4 w-4 text-[var(--accent)]" />
+            </div>
+            <div>
+              <h2
+                className="text-lg font-bold"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                Employees
+              </h2>
+              <p className="text-xs text-[var(--text-muted)]">
+                {mockEmployees.length} members &middot; Salaries encrypted
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -88,12 +93,13 @@ export function EmployeeTable({ onAddEmployee }: EmployeeTableProps) {
               </tr>
             </thead>
             <tbody>
-              {filteredEmployees.map((emp) => (
+              {filteredEmployees.map((emp, i) => (
                 <EmployeeRow
                   key={emp.id}
                   employee={emp}
                   copied={copied}
                   onCopy={handleCopy}
+                  index={i}
                 />
               ))}
             </tbody>
@@ -108,10 +114,12 @@ function EmployeeRow({
   employee: emp,
   copied,
   onCopy,
+  index,
 }: {
   employee: Employee;
   copied: string | null;
   onCopy: (text: string) => void;
+  index: number;
 }) {
   const initials = emp.name
     .split(" ")
@@ -119,7 +127,12 @@ function EmployeeRow({
     .join("");
 
   return (
-    <tr className="table-row">
+    <motion.tr
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.35 + index * 0.05 }}
+      className="table-row"
+    >
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent-muted)] text-xs font-bold text-[var(--accent)]">
@@ -166,6 +179,6 @@ function EmployeeRow({
           {emp.status}
         </span>
       </td>
-    </tr>
+    </motion.tr>
   );
 }

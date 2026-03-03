@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { fadeUp, stagger } from "@/lib/animations";
+import { Star4, CrossMark, Dot } from "@/components/shared/Stars";
 
 const SECURITY_POINTS = [
   "Salaries encrypted with TFHE before reaching the chain",
@@ -13,7 +14,14 @@ const SECURITY_POINTS = [
 
 export function SecuritySection() {
   return (
-    <section id="security" className="section-padding">
+    <section id="security" className="section-padding relative">
+      {/* Decorative elements */}
+      <Star4 className="top-[12%] right-[10%]" size={16} opacity={0.1} pulse delay={0.8} />
+      <Star4 className="bottom-[18%] left-[5%]" size={14} opacity={0.12} rotate delay={1.5} />
+      <CrossMark className="top-[8%] left-[15%]" size={10} opacity={0.08} rotate delay={0.3} />
+      <Dot className="top-[25%] right-[20%]" size={3} opacity={0.15} pulse delay={1} />
+      <Dot className="bottom-[15%] right-[8%]" size={4} opacity={0.12} pulse delay={2} />
+
       <div className="mx-auto max-w-[var(--max-width)] px-6">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
           {/* Left — Text */}

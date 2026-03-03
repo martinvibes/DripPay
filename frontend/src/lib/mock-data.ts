@@ -75,6 +75,57 @@ export const stats = [
   { value: "1-Click", label: "Payroll", sublabel: "Batch execution" },
 ];
 
+/* ═══ Organization Data ═══ */
+
+export interface Organization {
+  id: string;
+  name: string;
+  address: string;
+  employeeCount: number;
+  lastPayroll: string;
+  role: "admin" | "employee";
+}
+
+/** Mock orgs the employer has created */
+export const mockEmployerOrgs: Organization[] = [
+  {
+    id: "1",
+    name: "Acme Corp",
+    address: "0x1a2b...3c4d",
+    employeeCount: 4,
+    lastPayroll: "Feb 28, 2026",
+    role: "admin",
+  },
+  {
+    id: "2",
+    name: "DripPay Labs",
+    address: "0x5e6f...7a8b",
+    employeeCount: 2,
+    lastPayroll: "Feb 28, 2026",
+    role: "admin",
+  },
+];
+
+/** Mock orgs the employee belongs to */
+export const mockEmployeeOrgs: Organization[] = [
+  {
+    id: "1",
+    name: "Acme Corp",
+    address: "0x1a2b...3c4d",
+    employeeCount: 4,
+    lastPayroll: "Feb 28, 2026",
+    role: "employee",
+  },
+  {
+    id: "3",
+    name: "Genesis DAO",
+    address: "0x9c0d...1e2f",
+    employeeCount: 8,
+    lastPayroll: "Mar 1, 2026",
+    role: "employee",
+  },
+];
+
 /* ═══ Dashboard Data ═══ */
 
 export interface Employee {

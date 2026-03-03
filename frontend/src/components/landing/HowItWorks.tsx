@@ -3,10 +3,19 @@
 import { motion } from "framer-motion";
 import { fadeUp, stagger } from "@/lib/animations";
 import { steps } from "@/lib/mock-data";
+import { Star4, Star6, Diamond, DotCluster } from "@/components/shared/Stars";
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="section-padding">
+    <section id="how-it-works" className="section-padding relative">
+      {/* Decorative elements */}
+      <Star4 className="top-[8%] left-[5%]" size={18} opacity={0.1} pulse delay={0.3} />
+      <Star6 className="top-[15%] right-[8%]" size={16} opacity={0.07} rotate delay={1} />
+      <Star4 className="bottom-[12%] right-[6%]" size={14} opacity={0.12} rotate delay={2} />
+      <Diamond className="top-[30%] left-[8%]" size={6} opacity={0.1} pulse delay={0.8} />
+      <Diamond className="bottom-[20%] left-[15%]" size={8} opacity={0.08} float delay={1.5} />
+      <DotCluster className="bottom-[10%] right-[15%]" opacity={0.08} delay={0.5} />
+
       <div className="mx-auto max-w-[var(--max-width)] px-6">
         {/* Header */}
         <motion.div

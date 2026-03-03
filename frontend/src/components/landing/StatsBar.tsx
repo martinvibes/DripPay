@@ -5,8 +5,8 @@ import { stats } from "@/lib/mock-data";
 
 export function StatsBar() {
   return (
-    <section className="relative z-10 border-y border-[var(--border)]">
-      <div className="mx-auto flex max-w-[var(--max-width)] flex-wrap items-center justify-center gap-4 px-6 py-6 md:justify-between">
+    <section className="relative z-10 border-y border-[var(--border)] bg-[var(--bg-primary)]/60 backdrop-blur-sm">
+      <div className="mx-auto flex max-w-[var(--max-width)] flex-wrap items-center justify-center gap-4 px-6 py-7 md:justify-between">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -17,7 +17,7 @@ export function StatsBar() {
             className="flex items-center gap-4 px-4 py-2"
           >
             <span
-              className="text-2xl font-extrabold text-[var(--accent)] md:text-3xl"
+              className="text-2xl font-extrabold gradient-text md:text-3xl"
               style={{ fontFamily: "var(--font-display)" }}
             >
               {stat.value}
