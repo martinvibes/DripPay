@@ -1,0 +1,309 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════
+   DripPay — Design System
+   Dark luxe fintech with liquid/drip motifs
+   ═══════════════════════════════════════════ */
+
+:root {
+  /* Backgrounds */
+  --bg-deep: #04040c;
+  --bg-primary: #08081a;
+  --bg-elevated: #0e0e24;
+  --bg-card: rgba(255, 255, 255, 0.02);
+  --bg-card-hover: rgba(255, 255, 255, 0.04);
+
+  /* Accent */
+  --accent: #00e5a0;
+  --accent-hover: #00ffb2;
+  --accent-muted: rgba(0, 229, 160, 0.08);
+  --accent-glow: rgba(0, 229, 160, 0.15);
+  --accent-secondary: #6366f1;
+  --accent-cyan: #00b4d8;
+
+  /* Text */
+  --text-primary: #eeeef0;
+  --text-secondary: #8888a4;
+  --text-muted: #44445c;
+
+  /* Border */
+  --border: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --border-accent: rgba(0, 229, 160, 0.2);
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #00e5a0, #00b4d8, #6366f1);
+  --gradient-radial: radial-gradient(ellipse at 50% 0%, rgba(0, 229, 160, 0.08) 0%, transparent 60%);
+  --gradient-glow: radial-gradient(circle, rgba(0, 229, 160, 0.12) 0%, transparent 70%);
+
+  /* Sizing */
+  --nav-height: 72px;
+  --max-width: 1280px;
+}
+
+@theme inline {
+  --color-background: var(--bg-deep);
+  --color-foreground: var(--text-primary);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-muted: var(--accent-muted);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-card: var(--bg-card);
+  --color-card-hover: var(--bg-card-hover);
+  --color-elevated: var(--bg-elevated);
+  --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
+  --color-border-accent: var(--border-accent);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --font-display: var(--font-bricolage);
+  --font-body: var(--font-jakarta);
+}
+
+/* ═══ Base ═══ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-body), system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(0, 229, 160, 0.25);
+  color: #fff;
+}
+
+/* ═══ Noise / Grain Overlay ═══ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+}
+
+/* ═══ Dot Grid Pattern ═══ */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ═══ Gradient Mesh Backgrounds ═══ */
+.mesh-gradient {
+  position: relative;
+}
+
+.mesh-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(0, 229, 160, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 80%, rgba(0, 180, 216, 0.04) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══ Glass Card ═══ */
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+}
+
+/* ═══ Gradient Text ═══ */
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ═══ Glow Effect ═══ */
+.glow-accent {
+  box-shadow: 0 0 30px rgba(0, 229, 160, 0.1), 0 0 60px rgba(0, 229, 160, 0.05);
+}
+
+.glow-accent-hover:hover {
+  box-shadow: 0 0 40px rgba(0, 229, 160, 0.15), 0 0 80px rgba(0, 229, 160, 0.08);
+}
+
+/* ═══ Animated Orb ═══ */
+@keyframes orb-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(20px, -30px) scale(1.05); }
+  50% { transform: translate(-10px, -50px) scale(0.95); }
+  75% { transform: translate(30px, -20px) scale(1.02); }
+}
+
+@keyframes orb-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes drip-fall {
+  0% { transform: translateY(-10px) scale(1); opacity: 0; }
+  10% { transform: translateY(0) scale(1); opacity: 1; }
+  90% { transform: translateY(80vh) scale(0.8); opacity: 0.6; }
+  100% { transform: translateY(90vh) scale(0.6); opacity: 0; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1); opacity: 0.2; }
+  100% { transform: scale(1.2); opacity: 0; }
+}
+
+@keyframes line-draw {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══ Button Styles ═══ */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: var(--accent);
+  color: var(--bg-deep);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 32px rgba(0, 229, 160, 0.25);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-secondary:hover {
+  border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.03);
+  transform: translateY(-1px);
+}
+
+/* ═══ Section Spacing ═══ */
+.section-padding {
+  padding: 120px 24px;
+}
+
+/* ═══ Animated Border Gradient ═══ */
+.border-gradient {
+  position: relative;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(0, 229, 160, 0.3), rgba(99, 102, 241, 0.3), rgba(0, 180, 216, 0.3));
+}
+
+.border-gradient > * {
+  border-radius: 15px;
+  background: var(--bg-primary);
+}
+
+/* ═══ Dashboard-specific ═══ */
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.25s ease;
+}
+
+.stat-card:hover {
+  border-color: var(--border-hover);
+}
+
+.table-row {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s ease;
+}
+
+.table-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.input-field {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 229, 160, 0.08);
+}
+
+.input-field::placeholder {
+  color: var(--text-muted);
+}
