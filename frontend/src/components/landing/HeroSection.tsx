@@ -95,7 +95,7 @@ export function HeroSection() {
             className="max-w-lg text-base leading-relaxed text-[var(--text-secondary)] md:text-lg"
           >
             End-to-end encrypted payroll powered by Fully Homomorphic
-            Encryption. Nobody sees what you earn — not even the blockchain.
+            Encryption. Nobody sees what you earn not even the blockchain.
           </motion.p>
 
           {/* CTAs */}

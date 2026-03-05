@@ -6,40 +6,14 @@ import { Building2, ArrowRight, Loader2, Check } from "lucide-react";
 
 interface CreateOrgProps {
   onOrgCreated: (name: string) => void;
+  isDeploying?: boolean;
 }
 
-/**
- * Shown on the dashboard when the user hasn't created an organization yet.
- * Simulates the deploy flow with mock transaction steps.
- */
-export function CreateOrg({ onOrgCreated }: CreateOrgProps) {
+export function CreateOrg({ onOrgCreated, isDeploying = false }: CreateOrgProps) {
   const [orgName, setOrgName] = useState("");
-  const [isDeploying, setIsDeploying] = useState(false);
-  const [deployStep, setDeployStep] = useState(0);
 
-  const deploySteps = [
-    "Preparing contract deployment...",
-    "Encrypting organization data...",
-    "Deploying to Ethereum Sepolia...",
-    "Verifying contract...",
-  ];
-
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!orgName.trim() || isDeploying) return;
-
-    setIsDeploying(true);
-    setDeployStep(0);
-
-    // Simulate each deployment step
-    for (let i = 0; i < deploySteps.length; i++) {
-      setDeployStep(i);
-      await new Promise((r) => setTimeout(r, 800));
-    }
-
-    // Brief pause to show final step complete
-    setDeployStep(deploySteps.length);
-    await new Promise((r) => setTimeout(r, 500));
-
     onOrgCreated(orgName.trim());
   };
 
@@ -92,7 +66,7 @@ export function CreateOrg({ onOrgCreated }: CreateOrgProps) {
                 {isDeploying ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Deploying...
+                    Confirm in wallet...
                   </>
                 ) : (
                   <>
@@ -102,7 +76,7 @@ export function CreateOrg({ onOrgCreated }: CreateOrgProps) {
                 )}
               </button>
 
-              {/* Deployment progress steps */}
+              {/* Transaction pending indicator */}
               <AnimatePresence>
                 {isDeploying && (
                   <motion.div
@@ -112,33 +86,11 @@ export function CreateOrg({ onOrgCreated }: CreateOrgProps) {
                     className="overflow-hidden"
                   >
                     <div className="rounded-xl bg-[rgba(0,229,160,0.04)] border border-[var(--border-accent)] p-4">
-                      <div className="space-y-3">
-                        {deploySteps.map((step, i) => (
-                          <motion.div
-                            key={step}
-                            initial={{ opacity: 0, x: -8 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.15 }}
-                            className="flex items-center gap-2"
-                          >
-                            {deployStep > i ? (
-                              <Check className="h-3.5 w-3.5 text-[var(--accent)]" />
-                            ) : deployStep === i ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
-                            ) : (
-                              <div className="h-3.5 w-3.5 rounded-full border border-[var(--border)]" />
-                            )}
-                            <span
-                              className={`text-xs ${
-                                deployStep >= i
-                                  ? "text-[var(--text-secondary)]"
-                                  : "text-[var(--text-muted)]"
-                              }`}
-                            >
-                              {step}
-                            </span>
-                          </motion.div>
-                        ))}
+                      <div className="flex items-center gap-2.5">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
+                        <span className="text-xs text-[var(--text-secondary)]">
+                          Waiting for wallet confirmation and transaction...
+                        </span>
                       </div>
                     </div>
                   </motion.div>

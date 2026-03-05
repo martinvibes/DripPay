@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield,
@@ -10,67 +10,86 @@ import {
   Check,
   Sparkles,
 } from "lucide-react";
+import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { toHex } from "viem";
 import { Modal } from "@/components/shared/Modal";
-import type { Employee } from "@/lib/mock-data";
+import { ORGANIZATION_ABI } from "@/lib/contracts";
+import { getFhevmInstance } from "@/lib/fhevm";
 
 interface AddEmployeeModalProps {
   onClose: () => void;
-  onAddEmployee: (emp: Employee) => void;
+  onAddEmployee: () => void;
+  orgAddress: `0x${string}`;
   existingCount: number;
 }
 
-const ENCRYPT_STEPS = [
-  "Encrypting salary with TFHE...",
-  "Generating FHE proof...",
-  "Adding to organization contract...",
-];
+type Step = "form" | "encrypting" | "confirming" | "success" | "error";
 
 export function AddEmployeeModal({
   onClose,
   onAddEmployee,
+  orgAddress,
   existingCount,
 }: AddEmployeeModalProps) {
   const [name, setName] = useState("");
   const [wallet, setWallet] = useState("");
   const [role, setRole] = useState("");
   const [salary, setSalary] = useState("");
+  const [step, setStep] = useState<Step>("form");
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const [isEncrypting, setIsEncrypting] = useState(false);
-  const [encryptStep, setEncryptStep] = useState(0);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const { writeContract, data: txHash, isPending } = useWriteContract();
 
-  const isValid = name.trim() && wallet.trim() && role.trim() && salary.trim();
+  const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
+    hash: txHash,
+    query: {
+      enabled: !!txHash,
+    },
+  });
+
+  // When tx confirms, show success
+  useEffect(() => {
+    if (isTxConfirmed && step === "confirming") {
+      setStep("success");
+      setTimeout(() => onAddEmployee(), 1500);
+    }
+  }, [isTxConfirmed, step, onAddEmployee]);
+
+  const isValid = wallet.trim() && salary.trim();
 
   const handleSubmit = async () => {
-    if (!isValid || isEncrypting) return;
+    if (!isValid || step !== "form") return;
 
-    setIsEncrypting(true);
-    setEncryptStep(0);
+    try {
+      setStep("encrypting");
 
-    for (let i = 0; i < ENCRYPT_STEPS.length; i++) {
-      setEncryptStep(i);
-      await new Promise((r) => setTimeout(r, 900));
+      // Get fhEVM instance and encrypt salary
+      const fhevmInstance = await getFhevmInstance();
+      const input = fhevmInstance.createEncryptedInput(
+        orgAddress,
+        wallet.trim() as `0x${string}`
+      );
+      input.add64(parseInt(salary));
+      const encrypted = await input.encrypt();
+
+      setStep("confirming");
+
+      // Call addEmployee on the contract
+      writeContract({
+        address: orgAddress,
+        abi: ORGANIZATION_ABI,
+        functionName: "addEmployee",
+        args: [
+          wallet.trim() as `0x${string}`,
+          toHex(encrypted.handles[0]),
+          toHex(encrypted.inputProof),
+        ],
+      });
+    } catch (err: any) {
+      console.error("AddEmployee error:", err);
+      setErrorMsg(err?.shortMessage || err?.message || "Transaction failed");
+      setStep("error");
     }
-
-    setEncryptStep(ENCRYPT_STEPS.length);
-    await new Promise((r) => setTimeout(r, 400));
-
-    setIsSuccess(true);
-    await new Promise((r) => setTimeout(r, 1200));
-
-    const shortAddr = `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
-    const newEmployee: Employee = {
-      id: existingCount + 1,
-      name: name.trim(),
-      address: wallet.length > 10 ? shortAddr : wallet,
-      fullAddress: wallet.trim(),
-      role: role.trim(),
-      status: "active",
-      lastPaid: "—",
-    };
-
-    onAddEmployee(newEmployee);
-    onClose();
   };
 
   const modalIcon = (
@@ -78,7 +97,7 @@ export function AddEmployeeModal({
       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-muted)]">
         <UserPlus className="h-4 w-4 text-[var(--accent)]" />
       </div>
-      {isEncrypting && (
+      {(step === "encrypting" || step === "confirming") && (
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
@@ -91,12 +110,17 @@ export function AddEmployeeModal({
   return (
     <Modal
       onClose={onClose}
-      title={isSuccess ? "Employee Added" : "Add Employee"}
+      title={
+        step === "success"
+          ? "Employee Added"
+          : step === "error"
+            ? "Error"
+            : "Add Employee"
+      }
       icon={modalIcon}
     >
       <AnimatePresence mode="wait">
-        {isSuccess ? (
-          /* ═══ Success State ═══ */
+        {step === "success" ? (
           <motion.div
             key="success"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -122,7 +146,7 @@ export function AddEmployeeModal({
                 className="font-semibold"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                {name} added successfully
+                Employee added successfully
               </p>
             </motion.div>
             <motion.p
@@ -134,8 +158,25 @@ export function AddEmployeeModal({
               Salary encrypted and stored onchain
             </motion.p>
           </motion.div>
+        ) : step === "error" ? (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="py-6 text-center"
+          >
+            <p className="text-sm text-red-400 mb-4">{errorMsg}</p>
+            <button
+              onClick={() => {
+                setStep("form");
+                setErrorMsg("");
+              }}
+              className="btn-secondary"
+            >
+              Try Again
+            </button>
+          </motion.div>
         ) : (
-          /* ═══ Form State ═══ */
           <motion.div
             key="form"
             initial={{ opacity: 0 }}
@@ -154,7 +195,7 @@ export function AddEmployeeModal({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="input-field"
-                    disabled={isEncrypting}
+                    disabled={step !== "form"}
                   />
                 </div>
                 <div>
@@ -167,7 +208,7 @@ export function AddEmployeeModal({
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
                     className="input-field"
-                    disabled={isEncrypting}
+                    disabled={step !== "form"}
                   />
                 </div>
               </div>
@@ -182,7 +223,7 @@ export function AddEmployeeModal({
                   value={wallet}
                   onChange={(e) => setWallet(e.target.value)}
                   className="input-field font-mono text-sm"
-                  disabled={isEncrypting}
+                  disabled={step !== "form"}
                 />
               </div>
 
@@ -197,7 +238,7 @@ export function AddEmployeeModal({
                     value={salary}
                     onChange={(e) => setSalary(e.target.value)}
                     className="input-field !pr-20"
-                    disabled={isEncrypting}
+                    disabled={step !== "form"}
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-[var(--text-muted)]">
                     <Lock className="h-3 w-3" />
@@ -209,9 +250,9 @@ export function AddEmployeeModal({
                 </p>
               </div>
 
-              {/* Encryption progress */}
+              {/* Progress indicator */}
               <AnimatePresence>
-                {isEncrypting && (
+                {(step === "encrypting" || step === "confirming") && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
@@ -220,38 +261,28 @@ export function AddEmployeeModal({
                   >
                     <div className="rounded-xl bg-[rgba(0,229,160,0.04)] border border-[var(--border-accent)] p-4">
                       <div className="space-y-3">
-                        {ENCRYPT_STEPS.map((step, i) => (
+                        <div className="flex items-center gap-2.5">
+                          {step === "confirming" ? (
+                            <Check className="h-3.5 w-3.5 text-[var(--accent)]" />
+                          ) : (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
+                          )}
+                          <span className="text-xs text-[var(--text-secondary)]">
+                            Encrypting salary with FHE...
+                          </span>
+                        </div>
+                        {step === "confirming" && (
                           <motion.div
-                            key={step}
                             initial={{ opacity: 0, x: -8 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.15 }}
                             className="flex items-center gap-2.5"
                           >
-                            {encryptStep > i ? (
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ type: "spring", damping: 15, stiffness: 300 }}
-                              >
-                                <Check className="h-3.5 w-3.5 text-[var(--accent)]" />
-                              </motion.div>
-                            ) : encryptStep === i ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
-                            ) : (
-                              <div className="h-3.5 w-3.5 rounded-full border border-[var(--border)]" />
-                            )}
-                            <span
-                              className={`text-xs ${
-                                encryptStep >= i
-                                  ? "text-[var(--text-secondary)]"
-                                  : "text-[var(--text-muted)]"
-                              }`}
-                            >
-                              {step}
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
+                            <span className="text-xs text-[var(--text-secondary)]">
+                              Confirm transaction in wallet...
                             </span>
                           </motion.div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   </motion.div>
@@ -260,13 +291,13 @@ export function AddEmployeeModal({
 
               <button
                 onClick={handleSubmit}
-                disabled={!isValid || isEncrypting}
+                disabled={!isValid || step !== "form"}
                 className="btn-primary w-full !py-3 mt-1 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {isEncrypting ? (
+                {step !== "form" ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Encrypting...
+                    Processing...
                   </>
                 ) : (
                   <>

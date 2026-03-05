@@ -8,8 +8,6 @@ const ZERO_ADDRESS =
 export const CONTRACTS = {
   organizationFactory:
     (process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`) || ZERO_ADDRESS,
-  confidentialToken:
-    (process.env.NEXT_PUBLIC_TOKEN_ADDRESS as `0x${string}`) || ZERO_ADDRESS,
 };
 
 /** True when real contract addresses have been configured. */
@@ -17,10 +15,19 @@ export const isContractsDeployed =
   CONTRACTS.organizationFactory !== ZERO_ADDRESS;
 
 /**
- * ABIs — will be replaced with generated ABIs from compiled contracts.
- * Stubbed with expected function signatures for type safety.
+ * ABIs — generated from compiled Solidity contracts (contract/artifacts/).
  */
 export const ORGANIZATION_FACTORY_ABI = [
+  {
+    type: "event",
+    name: "OrganizationCreated",
+    anonymous: false,
+    inputs: [
+      { name: "orgAddress", type: "address", indexed: true },
+      { name: "admin", type: "address", indexed: true },
+      { name: "name", type: "string", indexed: false },
+    ],
+  },
   {
     type: "function",
     name: "createOrg",
@@ -35,18 +42,42 @@ export const ORGANIZATION_FACTORY_ABI = [
     outputs: [{ name: "", type: "address[]" }],
     stateMutability: "view",
   },
-  {
-    type: "event",
-    name: "OrganizationCreated",
-    inputs: [
-      { name: "orgAddress", type: "address", indexed: true },
-      { name: "admin", type: "address", indexed: true },
-      { name: "name", type: "string", indexed: false },
-    ],
-  },
 ] as const;
 
 export const ORGANIZATION_ABI = [
+  // Errors
+  { type: "error", name: "AlreadyEmployee", inputs: [] },
+  { type: "error", name: "NotEmployee", inputs: [] },
+  { type: "error", name: "OnlyAdmin", inputs: [] },
+  // Events
+  {
+    type: "event",
+    name: "EmployeeAdded",
+    anonymous: false,
+    inputs: [{ name: "employee", type: "address", indexed: true }],
+  },
+  {
+    type: "event",
+    name: "EmployeeRemoved",
+    anonymous: false,
+    inputs: [{ name: "employee", type: "address", indexed: true }],
+  },
+  {
+    type: "event",
+    name: "PayrollExecuted",
+    anonymous: false,
+    inputs: [
+      { name: "timestamp", type: "uint256", indexed: false },
+      { name: "employeeCount", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "Withdrawal",
+    anonymous: false,
+    inputs: [{ name: "employee", type: "address", indexed: true }],
+  },
+  // Functions
   {
     type: "function",
     name: "addEmployee",
@@ -57,6 +88,41 @@ export const ORGANIZATION_ABI = [
     ],
     outputs: [],
     stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "admin",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "balanceOf",
+    inputs: [{ name: "employee", type: "address" }],
+    outputs: [{ name: "", type: "bytes32" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getEmployees",
+    inputs: [],
+    outputs: [{ name: "", type: "address[]" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "isEmployee",
+    inputs: [{ name: "", type: "address" }],
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "name",
+    inputs: [],
+    outputs: [{ name: "", type: "string" }],
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -74,34 +140,6 @@ export const ORGANIZATION_ABI = [
   },
   {
     type: "function",
-    name: "getEmployees",
-    inputs: [],
-    outputs: [{ name: "", type: "address[]" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "balanceOf",
-    inputs: [{ name: "employee", type: "address" }],
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "name",
-    inputs: [],
-    outputs: [{ name: "", type: "string" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "admin",
-    inputs: [],
-    outputs: [{ name: "", type: "address" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
     name: "withdraw",
     inputs: [
       { name: "encryptedAmount", type: "bytes32" },
@@ -109,20 +147,5 @@ export const ORGANIZATION_ABI = [
     ],
     outputs: [],
     stateMutability: "nonpayable",
-  },
-  {
-    type: "event",
-    name: "EmployeeAdded",
-    inputs: [
-      { name: "employee", type: "address", indexed: true },
-    ],
-  },
-  {
-    type: "event",
-    name: "PayrollExecuted",
-    inputs: [
-      { name: "timestamp", type: "uint256", indexed: false },
-      { name: "employeeCount", type: "uint256", indexed: false },
-    ],
   },
 ] as const;

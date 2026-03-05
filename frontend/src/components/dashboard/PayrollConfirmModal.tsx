@@ -1,55 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Lock, Loader2, Check, ExternalLink, PartyPopper } from "lucide-react";
+import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { Modal } from "@/components/shared/Modal";
 import { EncryptedValue } from "@/components/shared/EncryptedValue";
+import { ORGANIZATION_ABI } from "@/lib/contracts";
 import type { Employee } from "@/lib/mock-data";
 
 interface PayrollConfirmModalProps {
   onClose: () => void;
   onExecute: () => void;
+  orgAddress: `0x${string}`;
   employees: Employee[];
 }
-
-const EXEC_STEPS = [
-  { label: "Preparing encrypted batch...", icon: Lock },
-  { label: "Computing on ciphertext...", icon: Zap },
-  { label: "Broadcasting transaction...", icon: Zap },
-  { label: "Confirming on Sepolia...", icon: Check },
-];
-
-const MOCK_TX = "0x3f8a...7e2d";
 
 export function PayrollConfirmModal({
   onClose,
   onExecute,
+  orgAddress,
   employees,
 }: PayrollConfirmModalProps) {
   const [isExecuting, setIsExecuting] = useState(false);
-  const [execStep, setExecStep] = useState(0);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const { writeContract, data: txHash, isPending } = useWriteContract();
+
+  const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
+    hash: txHash,
+    query: { enabled: !!txHash },
+  });
 
   const activeEmployees = employees.filter((e) => e.status === "active");
 
-  const handleExecute = async () => {
-    if (isExecuting) return;
-
-    setIsExecuting(true);
-    setExecStep(0);
-
-    for (let i = 0; i < EXEC_STEPS.length; i++) {
-      setExecStep(i);
-      await new Promise((r) => setTimeout(r, 1000));
+  useEffect(() => {
+    if (isTxConfirmed && !isSuccess) {
+      setIsSuccess(true);
+      onExecute();
     }
+  }, [isTxConfirmed, isSuccess, onExecute]);
 
-    setExecStep(EXEC_STEPS.length);
-    await new Promise((r) => setTimeout(r, 400));
+  const handleExecute = () => {
+    if (isExecuting) return;
+    setIsExecuting(true);
 
-    setIsSuccess(true);
-    onExecute();
+    writeContract({
+      address: orgAddress,
+      abi: ORGANIZATION_ABI,
+      functionName: "runPayroll",
+    });
   };
+
+  const shortTx = txHash
+    ? `${txHash.slice(0, 6)}...${txHash.slice(-4)}`
+    : "";
 
   const modalIcon = (
     <div className="relative">
@@ -74,14 +79,13 @@ export function PayrollConfirmModal({
     >
       <AnimatePresence mode="wait">
         {isSuccess ? (
-          /* ═══ Success State ═══ */
+          /* Success State */
           <motion.div
             key="success"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="py-4"
           >
-            {/* Big success circle */}
             <div className="text-center mb-6">
               <motion.div
                 initial={{ scale: 0 }}
@@ -92,7 +96,6 @@ export function PayrollConfirmModal({
                 <div className="flex h-20 w-20 mx-auto items-center justify-center rounded-full bg-[rgba(0,229,160,0.1)] border border-[var(--border-accent)]">
                   <Check className="h-10 w-10 text-[var(--accent)]" />
                 </div>
-                {/* Success pulse ring */}
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0.5 }}
                   animate={{ scale: 1.5, opacity: 0 }}
@@ -132,13 +135,20 @@ export function PayrollConfirmModal({
               transition={{ delay: 0.5 }}
               className="rounded-xl bg-[rgba(0,229,160,0.04)] border border-[var(--border-accent)] p-4 space-y-2"
             >
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-[var(--text-muted)]">Transaction</span>
-                <span className="flex items-center gap-1.5 font-mono text-xs text-[var(--accent)]">
-                  {MOCK_TX}
-                  <ExternalLink className="h-3 w-3" />
-                </span>
-              </div>
+              {txHash && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[var(--text-muted)]">Transaction</span>
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 font-mono text-xs text-[var(--accent)] hover:underline"
+                  >
+                    {shortTx}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              )}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-[var(--text-muted)]">Employees</span>
                 <span className="font-medium">{activeEmployees.length}</span>
@@ -149,7 +159,7 @@ export function PayrollConfirmModal({
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-[var(--text-muted)]">Encryption</span>
-                <span className="text-xs font-mono font-semibold text-[var(--accent)]">TFHE-256</span>
+                <span className="text-xs font-mono font-semibold text-[var(--accent)]">FHE-64</span>
               </div>
             </motion.div>
 
@@ -164,66 +174,29 @@ export function PayrollConfirmModal({
             </motion.button>
           </motion.div>
         ) : isExecuting ? (
-          /* ═══ Executing State ═══ */
+          /* Executing State */
           <motion.div
             key="executing"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="py-2"
+            className="py-6"
           >
-            {/* Progress bar */}
-            <div className="mb-5 h-1.5 rounded-full bg-[var(--bg-card)] overflow-hidden">
-              <motion.div
-                initial={{ width: "0%" }}
-                animate={{ width: `${((execStep + 1) / EXEC_STEPS.length) * 100}%` }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                className="h-full rounded-full bg-gradient-to-r from-[var(--accent-dim)] to-[var(--accent)]"
-              />
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
+              <div className="text-center">
+                <p className="text-sm font-medium">
+                  {isPending
+                    ? "Confirm in your wallet..."
+                    : "Waiting for transaction confirmation..."}
+                </p>
+                <p className="mt-1 text-xs text-[var(--text-muted)]">
+                  All salary amounts remain encrypted throughout execution
+                </p>
+              </div>
             </div>
-
-            <div className="space-y-3">
-              {EXEC_STEPS.map((step, i) => (
-                <motion.div
-                  key={step.label}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="flex items-center gap-3"
-                >
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-card)]">
-                    {execStep > i ? (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", damping: 15 }}
-                      >
-                        <Check className="h-3.5 w-3.5 text-[var(--accent)]" />
-                      </motion.div>
-                    ) : execStep === i ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
-                    ) : (
-                      <div className="h-2 w-2 rounded-full bg-[var(--text-muted)] opacity-30" />
-                    )}
-                  </div>
-                  <span
-                    className={`text-sm ${
-                      execStep >= i
-                        ? "text-[var(--text-primary)]"
-                        : "text-[var(--text-muted)]"
-                    }`}
-                  >
-                    {step.label}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
-
-            <p className="mt-5 text-center text-xs text-[var(--text-muted)]">
-              All salary amounts remain encrypted throughout execution
-            </p>
           </motion.div>
         ) : (
-          /* ═══ Confirm State ═══ */
+          /* Confirm State */
           <motion.div
             key="confirm"
             initial={{ opacity: 0 }}
@@ -243,10 +216,8 @@ export function PayrollConfirmModal({
 
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 {activeEmployees.map((emp, i) => {
-                  const initials = emp.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("");
+                  const label = emp.name || emp.address;
+                  const initials = label.slice(0, 2).toUpperCase();
 
                   return (
                     <motion.div
@@ -260,8 +231,7 @@ export function PayrollConfirmModal({
                         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-muted)] text-[10px] font-bold text-[var(--accent)]">
                           {initials}
                         </div>
-                        <span className="text-sm">{emp.name}</span>
-                        <span className="text-xs text-[var(--text-muted)]">{emp.role}</span>
+                        <span className="text-sm font-mono">{emp.address}</span>
                       </div>
                       <EncryptedValue bars={4} barHeight="h-2.5" />
                     </motion.div>
