@@ -1,39 +1,35 @@
-import { createInstance, type FhevmInstance } from "fhevmjs";
+import {
+  initSDK,
+  createInstance,
+  SepoliaConfig,
+  type FhevmInstance,
+} from "@zama-fhe/relayer-sdk/web";
 
 let instance: FhevmInstance | null = null;
-
-/**
- * fhEVM coprocessor configuration for Ethereum Sepolia.
- * Zama's coprocessor handles FHE operations off-chain while
- * contracts live on Sepolia.
- */
-const FHEVM_CONFIG = {
-  networkUrl:
-    process.env.NEXT_PUBLIC_FHEVM_NETWORK_URL ||
-    "https://eth-sepolia.public.blastapi.io",
-  gatewayUrl:
-    process.env.NEXT_PUBLIC_FHEVM_GATEWAY_URL ||
-    "https://gateway.zama.ai",
-  aclContractAddress:
-    process.env.NEXT_PUBLIC_ACL_CONTRACT_ADDRESS ||
-    "0xf0Ffdc93b7E186bC2f8CB3dAA75D86d1930A433D",
-  kmsContractAddress:
-    process.env.NEXT_PUBLIC_KMS_CONTRACT_ADDRESS ||
-    "0xbE0E383937d564D7FF0BC3b46c51f0bF8d5C311A",
-};
+let sdkInitialized = false;
 
 /**
  * Get or create the fhEVM instance.
- * Singleton — reuses the same instance across the app.
+ * Uses Zama's relayer SDK with the official SepoliaConfig.
+ * Pre-initializes WASM from /public/wasm/ to avoid import.meta.url issues.
  */
 export async function getFhevmInstance(): Promise<FhevmInstance> {
   if (instance) return instance;
 
+  // Initialize WASM modules from public directory
+  if (!sdkInitialized) {
+    await initSDK({
+      tfheParams: "/wasm/tfhe_bg.wasm",
+      kmsParams: "/wasm/kms_lib_bg.wasm",
+    });
+    sdkInitialized = true;
+  }
+
   instance = await createInstance({
-    networkUrl: FHEVM_CONFIG.networkUrl,
-    gatewayUrl: FHEVM_CONFIG.gatewayUrl,
-    aclContractAddress: FHEVM_CONFIG.aclContractAddress,
-    kmsContractAddress: FHEVM_CONFIG.kmsContractAddress,
+    ...SepoliaConfig,
+    network:
+      process.env.NEXT_PUBLIC_FHEVM_NETWORK_URL ||
+      "https://sepolia.infura.io/v3/bf008ee040c7429eb8d8784e52f28d10",
   });
 
   return instance;

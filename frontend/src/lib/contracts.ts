@@ -8,6 +8,8 @@ const ZERO_ADDRESS =
 export const CONTRACTS = {
   organizationFactory:
     (process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`) || ZERO_ADDRESS,
+  testToken:
+    (process.env.NEXT_PUBLIC_TEST_TOKEN_ADDRESS as `0x${string}`) || ZERO_ADDRESS,
 };
 
 /** True when real contract addresses have been configured. */
@@ -26,12 +28,16 @@ export const ORGANIZATION_FACTORY_ABI = [
       { name: "orgAddress", type: "address", indexed: true },
       { name: "admin", type: "address", indexed: true },
       { name: "name", type: "string", indexed: false },
+      { name: "paymentToken", type: "address", indexed: false },
     ],
   },
   {
     type: "function",
     name: "createOrg",
-    inputs: [{ name: "name", type: "string" }],
+    inputs: [
+      { name: "name", type: "string" },
+      { name: "paymentToken", type: "address" },
+    ],
     outputs: [{ name: "orgAddress", type: "address" }],
     stateMutability: "nonpayable",
   },
@@ -49,6 +55,11 @@ export const ORGANIZATION_ABI = [
   { type: "error", name: "AlreadyEmployee", inputs: [] },
   { type: "error", name: "NotEmployee", inputs: [] },
   { type: "error", name: "OnlyAdmin", inputs: [] },
+  { type: "error", name: "DepositFailed", inputs: [] },
+  { type: "error", name: "WithdrawalFailed", inputs: [] },
+  { type: "error", name: "InvalidETHDeposit", inputs: [] },
+  { type: "error", name: "InsufficientContractBalance", inputs: [] },
+  { type: "error", name: "ZeroAmount", inputs: [] },
   // Events
   {
     type: "event",
@@ -75,7 +86,19 @@ export const ORGANIZATION_ABI = [
     type: "event",
     name: "Withdrawal",
     anonymous: false,
-    inputs: [{ name: "employee", type: "address", indexed: true }],
+    inputs: [
+      { name: "employee", type: "address", indexed: true },
+      { name: "amount", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "Deposit",
+    anonymous: false,
+    inputs: [
+      { name: "from", type: "address", indexed: true },
+      { name: "amount", type: "uint256", indexed: false },
+    ],
   },
   // Functions
   {
@@ -126,6 +149,27 @@ export const ORGANIZATION_ABI = [
   },
   {
     type: "function",
+    name: "paymentToken",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "createdAt",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getContractBalance",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "removeEmployee",
     inputs: [{ name: "employee", type: "address" }],
     outputs: [],
@@ -141,11 +185,63 @@ export const ORGANIZATION_ABI = [
   {
     type: "function",
     name: "withdraw",
-    inputs: [
-      { name: "encryptedAmount", type: "bytes32" },
-      { name: "proof", type: "bytes" },
-    ],
+    inputs: [{ name: "amount", type: "uint256" }],
     outputs: [],
     stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "deposit",
+    inputs: [{ name: "amount", type: "uint256" }],
+    outputs: [],
+    stateMutability: "payable",
+  },
+  {
+    type: "receive",
+    stateMutability: "payable",
+  },
+] as const;
+
+export const ERC20_ABI = [
+  {
+    type: "function",
+    name: "approve",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "allowance",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "balanceOf",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "symbol",
+    inputs: [],
+    outputs: [{ name: "", type: "string" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "decimals",
+    inputs: [],
+    outputs: [{ name: "", type: "uint8" }],
+    stateMutability: "view",
   },
 ] as const;

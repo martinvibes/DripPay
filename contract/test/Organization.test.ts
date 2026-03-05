@@ -5,6 +5,8 @@ import {
   OrganizationFactory__factory,
   Organization,
   Organization__factory,
+  TestToken,
+  TestToken__factory,
 } from "../types";
 import { expect } from "chai";
 import { FhevmType } from "@fhevm/hardhat-plugin";
@@ -30,8 +32,9 @@ async function deployFactoryFixture() {
 async function createOrgViaFactory(
   factoryContract: OrganizationFactory,
   name: string,
+  paymentToken: string = ethers.ZeroAddress,
 ) {
-  const tx = await factoryContract.createOrg(name);
+  const tx = await factoryContract.createOrg(name, paymentToken);
   const receipt = await tx.wait();
 
   // Get org address from event
@@ -52,6 +55,13 @@ async function createOrgViaFactory(
   ) as Organization;
 
   return { orgContract, orgAddress };
+}
+
+async function deployTestToken(deployer: HardhatEthersSigner) {
+  const factory = (await ethers.getContractFactory("TestToken")) as TestToken__factory;
+  const token = (await factory.connect(deployer).deploy()) as TestToken;
+  const tokenAddress = await token.getAddress();
+  return { token, tokenAddress };
 }
 
 describe("OrganizationFactory", function () {
@@ -83,7 +93,7 @@ describe("OrganizationFactory", function () {
   });
 
   it("should create an organization", async function () {
-    const tx = await factoryContract.connect(signers.alice).createOrg("Acme Corp");
+    const tx = await factoryContract.connect(signers.alice).createOrg("Acme Corp", ethers.ZeroAddress);
     const receipt = await tx.wait();
     expect(receipt?.status).to.equal(1);
 
@@ -91,21 +101,15 @@ describe("OrganizationFactory", function () {
     expect(orgs.length).to.equal(1);
   });
 
-  it("should emit OrganizationCreated event", async function () {
-    await expect(factoryContract.connect(signers.alice).createOrg("Acme Corp"))
-      .to.emit(factoryContract, "OrganizationCreated")
-      .withArgs(
-        // orgAddress is dynamic, just check it was emitted
-        (addr: string) => ethers.isAddress(addr),
-        signers.alice.address,
-        "Acme Corp",
-      );
+  it("should emit OrganizationCreated event with paymentToken", async function () {
+    await expect(factoryContract.connect(signers.alice).createOrg("Acme Corp", ethers.ZeroAddress))
+      .to.emit(factoryContract, "OrganizationCreated");
   });
 
   it("should track multiple orgs per admin", async function () {
-    await (await factoryContract.connect(signers.alice).createOrg("Org A")).wait();
-    await (await factoryContract.connect(signers.alice).createOrg("Org B")).wait();
-    await (await factoryContract.connect(signers.bob).createOrg("Org C")).wait();
+    await (await factoryContract.connect(signers.alice).createOrg("Org A", ethers.ZeroAddress)).wait();
+    await (await factoryContract.connect(signers.alice).createOrg("Org B", ethers.ZeroAddress)).wait();
+    await (await factoryContract.connect(signers.bob).createOrg("Org C", ethers.ZeroAddress)).wait();
 
     const aliceOrgs = await factoryContract.getOrganizations(signers.alice.address);
     const bobOrgs = await factoryContract.getOrganizations(signers.bob.address);
@@ -145,6 +149,16 @@ describe("OrganizationFactory", function () {
       "Org A",
     );
     expect(addr1).to.not.equal(addr2);
+  });
+
+  it("should create ERC-20 org", async function () {
+    const { tokenAddress } = await deployTestToken(signers.deployer);
+    const { orgContract } = await createOrgViaFactory(
+      factoryContract.connect(signers.alice),
+      "Token Org",
+      tokenAddress,
+    );
+    expect(await orgContract.paymentToken()).to.equal(tokenAddress);
   });
 });
 
@@ -189,6 +203,15 @@ describe("Organization", function () {
     it("should start with no employees", async function () {
       const employees = await orgContract.getEmployees();
       expect(employees.length).to.equal(0);
+    });
+
+    it("should set paymentToken to ETH (zero address) by default", async function () {
+      expect(await orgContract.paymentToken()).to.equal(ethers.ZeroAddress);
+    });
+
+    it("should set createdAt timestamp", async function () {
+      const createdAt = await orgContract.createdAt();
+      expect(createdAt).to.be.gt(0);
     });
   });
 
@@ -570,7 +593,88 @@ describe("Organization", function () {
     });
   });
 
-  describe("withdraw", function () {
+  describe("deposit (ETH org)", function () {
+    it("should accept ETH deposits", async function () {
+      await (await orgContract.connect(signers.alice).deposit(0, { value: ethers.parseEther("1") })).wait();
+      expect(await orgContract.getContractBalance()).to.equal(ethers.parseEther("1"));
+    });
+
+    it("should emit Deposit event", async function () {
+      await expect(orgContract.connect(signers.alice).deposit(0, { value: ethers.parseEther("1") }))
+        .to.emit(orgContract, "Deposit")
+        .withArgs(signers.alice.address, ethers.parseEther("1"));
+    });
+
+    it("should accept direct ETH transfers via receive()", async function () {
+      await (await signers.alice.sendTransaction({ to: orgAddress, value: ethers.parseEther("0.5") })).wait();
+      expect(await orgContract.getContractBalance()).to.equal(ethers.parseEther("0.5"));
+    });
+
+    it("should revert ETH deposit with zero value", async function () {
+      await expect(
+        orgContract.connect(signers.alice).deposit(0, { value: 0 }),
+      ).to.be.revertedWithCustomError(orgContract, "ZeroAmount");
+    });
+
+    it("should report correct contract balance", async function () {
+      expect(await orgContract.getContractBalance()).to.equal(0);
+      await (await orgContract.connect(signers.alice).deposit(0, { value: ethers.parseEther("2") })).wait();
+      expect(await orgContract.getContractBalance()).to.equal(ethers.parseEther("2"));
+    });
+  });
+
+  describe("deposit (ERC-20 org)", function () {
+    let tokenOrg: Organization;
+    let tokenOrgAddress: string;
+    let token: TestToken;
+    let tokenAddress: string;
+
+    beforeEach(async function () {
+      ({ token, tokenAddress } = await deployTestToken(signers.deployer));
+      ({ orgContract: tokenOrg, orgAddress: tokenOrgAddress } = await createOrgViaFactory(
+        factoryContract.connect(signers.alice),
+        "Token Org",
+        tokenAddress,
+      ));
+      // Mint tokens to alice for deposits
+      await (await token.mint(signers.alice.address, 1_000_000n * 10n ** 6n)).wait();
+    });
+
+    it("should accept ERC-20 deposits", async function () {
+      const depositAmount = 10_000n * 10n ** 6n;
+      await (await token.connect(signers.alice).approve(tokenOrgAddress, depositAmount)).wait();
+      await (await tokenOrg.connect(signers.alice).deposit(depositAmount)).wait();
+      expect(await tokenOrg.getContractBalance()).to.equal(depositAmount);
+    });
+
+    it("should emit Deposit event for ERC-20", async function () {
+      const depositAmount = 5_000n * 10n ** 6n;
+      await (await token.connect(signers.alice).approve(tokenOrgAddress, depositAmount)).wait();
+      await expect(tokenOrg.connect(signers.alice).deposit(depositAmount))
+        .to.emit(tokenOrg, "Deposit")
+        .withArgs(signers.alice.address, depositAmount);
+    });
+
+    it("should revert ERC-20 deposit with zero amount", async function () {
+      await expect(
+        tokenOrg.connect(signers.alice).deposit(0),
+      ).to.be.revertedWithCustomError(tokenOrg, "ZeroAmount");
+    });
+
+    it("should revert if ETH sent to ERC-20 org deposit", async function () {
+      await expect(
+        tokenOrg.connect(signers.alice).deposit(1000, { value: ethers.parseEther("1") }),
+      ).to.be.revertedWithCustomError(tokenOrg, "InvalidETHDeposit");
+    });
+
+    it("should revert direct ETH transfer to ERC-20 org", async function () {
+      await expect(
+        signers.alice.sendTransaction({ to: tokenOrgAddress, value: ethers.parseEther("0.5") }),
+      ).to.be.revertedWithCustomError(tokenOrg, "InvalidETHDeposit");
+    });
+  });
+
+  describe("withdraw (ETH — plaintext amount)", function () {
     const salary = 10000;
 
     beforeEach(async function () {
@@ -592,24 +696,23 @@ describe("Organization", function () {
 
       // Run payroll so Bob has balance
       await (await orgContract.connect(signers.alice).runPayroll()).wait();
+
+      // Fund the contract with ETH so withdrawals work
+      await (await orgContract.connect(signers.alice).deposit(0, { value: ethers.parseEther("1") })).wait();
     });
 
-    it("should allow employee to withdraw", async function () {
-      const withdrawAmount = 4000;
-      const encryptedWithdraw = await fhevm
-        .createEncryptedInput(orgAddress, signers.bob.address)
-        .add64(withdrawAmount)
-        .encrypt();
+    it("should allow employee to withdraw ETH", async function () {
+      const withdrawAmount = 4000n;
 
-      await (
-        await orgContract
-          .connect(signers.bob)
-          .withdraw(
-            encryptedWithdraw.handles[0],
-            encryptedWithdraw.inputProof,
-          )
-      ).wait();
+      const bobBalanceBefore = await ethers.provider.getBalance(signers.bob.address);
+      const tx = await orgContract.connect(signers.bob).withdraw(withdrawAmount);
+      const receipt = await tx.wait();
+      const gasCost = receipt!.gasUsed * receipt!.gasPrice;
+      const bobBalanceAfter = await ethers.provider.getBalance(signers.bob.address);
 
+      expect(bobBalanceAfter - bobBalanceBefore + gasCost).to.equal(withdrawAmount);
+
+      // Check encrypted balance was updated
       const encryptedBalance = await orgContract.balanceOf(signers.bob.address);
       const clearBalance = await fhevm.userDecryptEuint(
         FhevmType.euint64,
@@ -617,77 +720,37 @@ describe("Organization", function () {
         orgAddress,
         signers.bob,
       );
-      expect(clearBalance).to.equal(salary - withdrawAmount);
+      expect(clearBalance).to.equal(salary - Number(withdrawAmount));
     });
 
-    it("should not deduct if withdraw amount exceeds balance", async function () {
-      const withdrawAmount = salary + 5000; // more than balance
-      const encryptedWithdraw = await fhevm
-        .createEncryptedInput(orgAddress, signers.bob.address)
-        .add64(withdrawAmount)
-        .encrypt();
-
-      await (
-        await orgContract
-          .connect(signers.bob)
-          .withdraw(
-            encryptedWithdraw.handles[0],
-            encryptedWithdraw.inputProof,
-          )
-      ).wait();
-
-      // Balance should remain unchanged
-      const encryptedBalance = await orgContract.balanceOf(signers.bob.address);
-      const clearBalance = await fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        encryptedBalance,
-        orgAddress,
-        signers.bob,
-      );
-      expect(clearBalance).to.equal(salary);
-    });
-
-    it("should emit Withdrawal event", async function () {
-      const encryptedWithdraw = await fhevm
-        .createEncryptedInput(orgAddress, signers.bob.address)
-        .add64(1000)
-        .encrypt();
-
-      await expect(
-        orgContract
-          .connect(signers.bob)
-          .withdraw(
-            encryptedWithdraw.handles[0],
-            encryptedWithdraw.inputProof,
-          ),
-      )
+    it("should emit Withdrawal event with amount", async function () {
+      await expect(orgContract.connect(signers.bob).withdraw(1000))
         .to.emit(orgContract, "Withdrawal")
-        .withArgs(signers.bob.address);
+        .withArgs(signers.bob.address, 1000);
     });
 
     it("should revert if not an employee", async function () {
-      const encryptedWithdraw = await fhevm
-        .createEncryptedInput(orgAddress, signers.deployer.address)
-        .add64(1000)
-        .encrypt();
-
       await expect(
-        orgContract
-          .connect(signers.deployer)
-          .withdraw(
-            encryptedWithdraw.handles[0],
-            encryptedWithdraw.inputProof,
-          ),
+        orgContract.connect(signers.deployer).withdraw(1000),
       ).to.be.revertedWithCustomError(orgContract, "NotEmployee");
     });
 
-    it("should drain balance to zero with exact withdrawal", async function () {
-      const encryptedWithdraw = await fhevm
-        .createEncryptedInput(orgAddress, signers.bob.address)
-        .add64(salary) // withdraw exact balance
-        .encrypt();
+    it("should revert on zero amount", async function () {
+      await expect(
+        orgContract.connect(signers.bob).withdraw(0),
+      ).to.be.revertedWithCustomError(orgContract, "ZeroAmount");
+    });
 
-      await (await orgContract.connect(signers.bob).withdraw(encryptedWithdraw.handles[0], encryptedWithdraw.inputProof)).wait();
+    it("should revert if contract has insufficient balance", async function () {
+      // Try to withdraw more than the contract holds
+      const contractBal = await orgContract.getContractBalance();
+      await expect(
+        orgContract.connect(signers.bob).withdraw(contractBal + 1n),
+      ).to.be.revertedWithCustomError(orgContract, "InsufficientContractBalance");
+    });
+
+    it("should drain balance to zero with exact withdrawal", async function () {
+      await (await orgContract.connect(signers.bob).withdraw(salary)).wait();
 
       const encryptedBalance = await orgContract.balanceOf(signers.bob.address);
       const clearBalance = await fhevm.userDecryptEuint(FhevmType.euint64, encryptedBalance, orgAddress, signers.bob);
@@ -695,36 +758,17 @@ describe("Organization", function () {
     });
 
     it("should handle multiple partial withdrawals", async function () {
-      // Withdraw 3000, then 2000, then 4000 from 10000 balance
-      const w1 = await fhevm.createEncryptedInput(orgAddress, signers.bob.address).add64(3000).encrypt();
-      await (await orgContract.connect(signers.bob).withdraw(w1.handles[0], w1.inputProof)).wait();
-
-      const w2 = await fhevm.createEncryptedInput(orgAddress, signers.bob.address).add64(2000).encrypt();
-      await (await orgContract.connect(signers.bob).withdraw(w2.handles[0], w2.inputProof)).wait();
-
-      const w3 = await fhevm.createEncryptedInput(orgAddress, signers.bob.address).add64(4000).encrypt();
-      await (await orgContract.connect(signers.bob).withdraw(w3.handles[0], w3.inputProof)).wait();
+      await (await orgContract.connect(signers.bob).withdraw(3000)).wait();
+      await (await orgContract.connect(signers.bob).withdraw(2000)).wait();
+      await (await orgContract.connect(signers.bob).withdraw(4000)).wait();
 
       const clearBalance = await fhevm.userDecryptEuint(FhevmType.euint64, await orgContract.balanceOf(signers.bob.address), orgAddress, signers.bob);
       expect(clearBalance).to.equal(salary - 3000 - 2000 - 4000); // 1000
     });
 
-    it("should handle withdraw of zero amount", async function () {
-      const encryptedWithdraw = await fhevm
-        .createEncryptedInput(orgAddress, signers.bob.address)
-        .add64(0)
-        .encrypt();
-
-      await (await orgContract.connect(signers.bob).withdraw(encryptedWithdraw.handles[0], encryptedWithdraw.inputProof)).wait();
-
-      const clearBalance = await fhevm.userDecryptEuint(FhevmType.euint64, await orgContract.balanceOf(signers.bob.address), orgAddress, signers.bob);
-      expect(clearBalance).to.equal(salary); // unchanged
-    });
-
     it("should allow withdraw after payroll tops up balance", async function () {
       // Withdraw everything
-      const w1 = await fhevm.createEncryptedInput(orgAddress, signers.bob.address).add64(salary).encrypt();
-      await (await orgContract.connect(signers.bob).withdraw(w1.handles[0], w1.inputProof)).wait();
+      await (await orgContract.connect(signers.bob).withdraw(salary)).wait();
 
       let clearBalance = await fhevm.userDecryptEuint(FhevmType.euint64, await orgContract.balanceOf(signers.bob.address), orgAddress, signers.bob);
       expect(clearBalance).to.equal(0);
@@ -736,22 +780,64 @@ describe("Organization", function () {
       expect(clearBalance).to.equal(salary);
 
       // Partial withdraw after refill
-      const w2 = await fhevm.createEncryptedInput(orgAddress, signers.bob.address).add64(7000).encrypt();
-      await (await orgContract.connect(signers.bob).withdraw(w2.handles[0], w2.inputProof)).wait();
+      await (await orgContract.connect(signers.bob).withdraw(7000)).wait();
 
       clearBalance = await fhevm.userDecryptEuint(FhevmType.euint64, await orgContract.balanceOf(signers.bob.address), orgAddress, signers.bob);
       expect(clearBalance).to.equal(salary - 7000);
     });
+  });
 
-    it("should protect balance when multiple oversized withdrawals attempted", async function () {
-      // Try withdrawing more than balance three times — balance stays same
-      for (let i = 0; i < 3; i++) {
-        const w = await fhevm.createEncryptedInput(orgAddress, signers.bob.address).add64(salary + 1).encrypt();
-        await (await orgContract.connect(signers.bob).withdraw(w.handles[0], w.inputProof)).wait();
-      }
+  describe("withdraw (ERC-20)", function () {
+    let tokenOrg: Organization;
+    let tokenOrgAddress: string;
+    let token: TestToken;
+    let tokenAddress: string;
+    const salary = 10000;
 
-      const clearBalance = await fhevm.userDecryptEuint(FhevmType.euint64, await orgContract.balanceOf(signers.bob.address), orgAddress, signers.bob);
-      expect(clearBalance).to.equal(salary);
+    beforeEach(async function () {
+      ({ token, tokenAddress } = await deployTestToken(signers.deployer));
+      ({ orgContract: tokenOrg, orgAddress: tokenOrgAddress } = await createOrgViaFactory(
+        factoryContract.connect(signers.alice),
+        "Token Org",
+        tokenAddress,
+      ));
+
+      // Add Bob as employee
+      const encryptedInput = await fhevm
+        .createEncryptedInput(tokenOrgAddress, signers.alice.address)
+        .add64(salary)
+        .encrypt();
+      await (await tokenOrg.connect(signers.alice).addEmployee(signers.bob.address, encryptedInput.handles[0], encryptedInput.inputProof)).wait();
+
+      // Run payroll
+      await (await tokenOrg.connect(signers.alice).runPayroll()).wait();
+
+      // Fund with tokens
+      await (await token.mint(signers.alice.address, 1_000_000n)).wait();
+      await (await token.connect(signers.alice).approve(tokenOrgAddress, 1_000_000n)).wait();
+      await (await tokenOrg.connect(signers.alice).deposit(1_000_000n)).wait();
+    });
+
+    it("should allow employee to withdraw ERC-20 tokens", async function () {
+      const withdrawAmount = 4000n;
+
+      const bobTokenBefore = await token.balanceOf(signers.bob.address);
+      await (await tokenOrg.connect(signers.bob).withdraw(withdrawAmount)).wait();
+      const bobTokenAfter = await token.balanceOf(signers.bob.address);
+
+      expect(bobTokenAfter - bobTokenBefore).to.equal(withdrawAmount);
+    });
+
+    it("should update encrypted balance after ERC-20 withdrawal", async function () {
+      await (await tokenOrg.connect(signers.bob).withdraw(3000)).wait();
+
+      const clearBalance = await fhevm.userDecryptEuint(
+        FhevmType.euint64,
+        await tokenOrg.balanceOf(signers.bob.address),
+        tokenOrgAddress,
+        signers.bob,
+      );
+      expect(clearBalance).to.equal(salary - 3000);
     });
   });
 
@@ -768,6 +854,26 @@ describe("Organization", function () {
       const encryptedBalance = await orgContract.balanceOf(signers.bob.address);
       const clearBalance = await fhevm.userDecryptEuint(FhevmType.euint64, encryptedBalance, orgAddress, signers.bob);
       expect(clearBalance).to.equal(0);
+    });
+  });
+
+  describe("getContractBalance", function () {
+    it("should return zero for new ETH org", async function () {
+      expect(await orgContract.getContractBalance()).to.equal(0);
+    });
+
+    it("should track ETH balance after deposits and withdrawals", async function () {
+      // Deposit
+      await (await orgContract.connect(signers.alice).deposit(0, { value: ethers.parseEther("1") })).wait();
+      expect(await orgContract.getContractBalance()).to.equal(ethers.parseEther("1"));
+
+      // Add employee, payroll, withdraw
+      const enc = await fhevm.createEncryptedInput(orgAddress, signers.alice.address).add64(5000).encrypt();
+      await (await orgContract.connect(signers.alice).addEmployee(signers.bob.address, enc.handles[0], enc.inputProof)).wait();
+      await (await orgContract.connect(signers.alice).runPayroll()).wait();
+      await (await orgContract.connect(signers.bob).withdraw(1000)).wait();
+
+      expect(await orgContract.getContractBalance()).to.equal(ethers.parseEther("1") - 1000n);
     });
   });
 

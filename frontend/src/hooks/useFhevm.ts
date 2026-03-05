@@ -32,7 +32,7 @@ export function useFhevm() {
           address
         );
         input.add64(value);
-        const encrypted = input.encrypt();
+        const encrypted = await input.encrypt();
         return encrypted;
       } finally {
         setIsEncrypting(false);
@@ -43,10 +43,10 @@ export function useFhevm() {
 
   /**
    * Decrypt (re-encrypt) an encrypted balance handle.
-   * Used when employee views their own balance.
+   * Uses the relayer SDK's user decryption flow.
    *
-   * Flow: get handle from contract → generate keypair → sign EIP-712 →
-   *       re-encrypt with user's key → return plaintext.
+   * Note: The relayer SDK uses createEIP712 with different params than fhevmjs.
+   * Full implementation requires: contractAddresses[], startTimestamp, durationDays.
    */
   const decryptBalance = useCallback(
     async (handle: bigint, contractAddress: `0x${string}`) => {
@@ -57,16 +57,24 @@ export function useFhevm() {
       try {
         const instance = await getFhevmInstance();
         const { publicKey, privateKey } = instance.generateKeypair();
-        const eip712 = instance.createEIP712(publicKey, contractAddress);
 
-        // Sign the re-encryption request with the user's wallet
-        // fhevmjs EIP-712 types need casting for viem compatibility
+        // Relayer SDK createEIP712 signature:
+        // createEIP712(publicKey, contractAddresses[], startTimestamp, durationDays)
+        const now = Math.floor(Date.now() / 1000);
+        const eip712 = instance.createEIP712(
+          publicKey,
+          [contractAddress],
+          now,
+          1, // 1 day validity
+        );
+
         const signature = await walletClient.signTypedData({
           account: address,
-          ...(eip712 as Parameters<typeof walletClient.signTypedData>[0]),
+          ...(eip712 as any),
         });
 
-        const decrypted = await instance.reencrypt(
+        // Use the instance's userDecrypt method
+        const decrypted = await (instance as any).userDecrypt(
           handle,
           privateKey,
           publicKey,

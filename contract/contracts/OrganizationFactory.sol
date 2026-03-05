@@ -9,7 +9,8 @@ contract OrganizationFactory {
     event OrganizationCreated(
         address indexed orgAddress,
         address indexed admin,
-        string name
+        string name,
+        address paymentToken
     );
 
     /// @dev admin address → list of orgs they created
@@ -17,12 +18,13 @@ contract OrganizationFactory {
 
     /// @notice Deploy a new Organization contract
     /// @param name The organization name
+    /// @param paymentToken The payment token address (address(0) for ETH)
     /// @return orgAddress The address of the newly deployed Organization
-    function createOrg(string calldata name) external returns (address orgAddress) {
-        Organization org = new Organization(name, msg.sender);
+    function createOrg(string calldata name, address paymentToken) external returns (address orgAddress) {
+        Organization org = new Organization(name, msg.sender, paymentToken);
         orgAddress = address(org);
         _orgsByAdmin[msg.sender].push(orgAddress);
-        emit OrganizationCreated(orgAddress, msg.sender, name);
+        emit OrganizationCreated(orgAddress, msg.sender, name, paymentToken);
     }
 
     /// @notice Get all organizations created by an admin

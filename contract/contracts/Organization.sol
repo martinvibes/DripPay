@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {FHE, euint64, externalEuint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title Organization — manages employees, encrypted salaries, and batch payroll
 /// @notice Deployed by OrganizationFactory. Uses Zama fhEVM for fully encrypted payroll.
@@ -10,6 +11,8 @@ contract Organization is ZamaEthereumConfig {
     // ── State ────────────────────────────────────────────────────────────
     address public admin;
     string public name;
+    address public paymentToken; // address(0) = ETH, otherwise ERC-20
+    uint256 public createdAt;
 
     address[] private _employees;
     mapping(address => bool) public isEmployee;
@@ -20,12 +23,18 @@ contract Organization is ZamaEthereumConfig {
     event EmployeeAdded(address indexed employee);
     event EmployeeRemoved(address indexed employee);
     event PayrollExecuted(uint256 timestamp, uint256 employeeCount);
-    event Withdrawal(address indexed employee);
+    event Withdrawal(address indexed employee, uint256 amount);
+    event Deposit(address indexed from, uint256 amount);
 
     // ── Errors ───────────────────────────────────────────────────────────
     error OnlyAdmin();
     error AlreadyEmployee();
     error NotEmployee();
+    error DepositFailed();
+    error WithdrawalFailed();
+    error InvalidETHDeposit();
+    error InsufficientContractBalance();
+    error ZeroAmount();
 
     // ── Modifiers ────────────────────────────────────────────────────────
     modifier onlyAdmin() {
@@ -34,9 +43,46 @@ contract Organization is ZamaEthereumConfig {
     }
 
     // ── Constructor ──────────────────────────────────────────────────────
-    constructor(string memory _name, address _admin) {
+    constructor(string memory _name, address _admin, address _paymentToken) {
         name = _name;
         admin = _admin;
+        paymentToken = _paymentToken;
+        createdAt = block.timestamp;
+    }
+
+    // ── Deposit Functions ───────────────────────────────────────────────
+
+    /// @notice Deposit tokens into the organization's pool
+    /// @param amount The amount to deposit (ignored for ETH — uses msg.value)
+    function deposit(uint256 amount) external payable {
+        if (paymentToken == address(0)) {
+            // ETH deposit
+            if (msg.value == 0) revert ZeroAmount();
+            emit Deposit(msg.sender, msg.value);
+        } else {
+            // ERC-20 deposit
+            if (amount == 0) revert ZeroAmount();
+            if (msg.value > 0) revert InvalidETHDeposit();
+            bool success = IERC20(paymentToken).transferFrom(msg.sender, address(this), amount);
+            if (!success) revert DepositFailed();
+            emit Deposit(msg.sender, amount);
+        }
+    }
+
+    /// @notice Accept direct ETH transfers (ETH orgs only)
+    receive() external payable {
+        if (paymentToken != address(0)) revert InvalidETHDeposit();
+        if (msg.value == 0) revert ZeroAmount();
+        emit Deposit(msg.sender, msg.value);
+    }
+
+    /// @notice Get the real token balance held by this contract
+    function getContractBalance() external view returns (uint256) {
+        if (paymentToken == address(0)) {
+            return address(this).balance;
+        } else {
+            return IERC20(paymentToken).balanceOf(address(this));
+        }
     }
 
     // ── Admin Functions ──────────────────────────────────────────────────
@@ -105,31 +151,45 @@ contract Organization is ZamaEthereumConfig {
 
     // ── Employee Functions ───────────────────────────────────────────────
 
-    /// @notice Withdraw from accumulated balance
-    /// @param encryptedAmount The encrypted withdrawal amount
-    /// @param proof The input proof for FHE verification
-    function withdraw(
-        externalEuint64 encryptedAmount,
-        bytes calldata proof
-    ) external {
+    /// @notice Withdraw from accumulated balance (trust-based: plaintext amount)
+    /// @dev Employee specifies plaintext amount. Contract encrypts it, does FHE comparison
+    ///      to update encrypted balance, then transfers real tokens.
+    /// @param amount The plaintext withdrawal amount
+    function withdraw(uint256 amount) external {
         if (!isEmployee[msg.sender]) revert NotEmployee();
+        if (amount == 0) revert ZeroAmount();
 
-        euint64 amount = FHE.fromExternal(encryptedAmount, proof);
+        // Check contract has enough real tokens
+        uint256 contractBal;
+        if (paymentToken == address(0)) {
+            contractBal = address(this).balance;
+        } else {
+            contractBal = IERC20(paymentToken).balanceOf(address(this));
+        }
+        if (contractBal < amount) revert InsufficientContractBalance();
 
-        // Check: amount <= balance (encrypted comparison)
-        ebool sufficient = FHE.le(amount, _balances[msg.sender]);
-
-        // Conditional subtract: if sufficient, subtract; otherwise keep balance unchanged
+        // Encrypt the withdrawal amount and do FHE balance update
+        euint64 encAmount = FHE.asEuint64(uint64(amount));
+        ebool sufficient = FHE.le(encAmount, _balances[msg.sender]);
         euint64 newBalance = FHE.select(
             sufficient,
-            FHE.sub(_balances[msg.sender], amount),
+            FHE.sub(_balances[msg.sender], encAmount),
             _balances[msg.sender]
         );
 
         _balances[msg.sender] = FHE.allowThis(newBalance);
         FHE.allow(_balances[msg.sender], msg.sender);
 
-        emit Withdrawal(msg.sender);
+        // Transfer real tokens
+        if (paymentToken == address(0)) {
+            (bool success, ) = payable(msg.sender).call{value: amount}("");
+            if (!success) revert WithdrawalFailed();
+        } else {
+            bool success = IERC20(paymentToken).transfer(msg.sender, amount);
+            if (!success) revert WithdrawalFailed();
+        }
+
+        emit Withdrawal(msg.sender, amount);
     }
 
     // ── View Functions ───────────────────────────────────────────────────

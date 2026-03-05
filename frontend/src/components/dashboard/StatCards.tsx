@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Building2, Users, Shield, TrendingUp } from "lucide-react";
+import { Building2, Users, Shield, TrendingUp, Wallet } from "lucide-react";
 import { fadeUpSmall, staggerFast } from "@/lib/animations";
 import { payrollHistory } from "@/lib/mock-data";
 
@@ -9,6 +9,10 @@ interface StatCardsProps {
   orgName?: string;
   employeeCount?: number;
   activeCount?: number;
+  contractBalance?: bigint;
+  isETH?: boolean;
+  tokenSymbol?: string;
+  tokenDecimals?: number;
 }
 
 /** Mini sparkline SVG — gives each card a visual pulse */
@@ -79,7 +83,25 @@ const sparkData = {
   growth: [10, 18, 22, 30, 35, 42],
 };
 
-const getStatCards = (orgName: string, empCount: number, activeCount: number) => [
+function formatBalance(bal: bigint | undefined, isETH: boolean, decimals: number) {
+  if (bal === undefined) return "—";
+  if (isETH) {
+    const eth = Number(bal) / 1e18;
+    return eth.toFixed(eth < 0.01 ? 6 : 4);
+  }
+  const val = Number(bal) / 10 ** decimals;
+  return val.toFixed(val < 0.01 ? 6 : 2);
+}
+
+const getStatCards = (
+  orgName: string,
+  empCount: number,
+  activeCount: number,
+  contractBalance: bigint | undefined,
+  isETH: boolean,
+  tokenSymbol: string,
+  tokenDecimals: number,
+) => [
   {
     icon: Building2,
     label: "Organization",
@@ -95,11 +117,11 @@ const getStatCards = (orgName: string, empCount: number, activeCount: number) =>
     spark: sparkData.employees,
   },
   {
-    icon: Shield,
-    label: "Payroll Status",
-    value: "Up to date",
-    sub: "Last run: Feb 28",
-    spark: null,
+    icon: Wallet,
+    label: "Contract Balance",
+    value: `${formatBalance(contractBalance, isETH, tokenDecimals)} ${tokenSymbol}`,
+    sub: "Available for withdrawals",
+    spark: sparkData.growth,
   },
   {
     icon: TrendingUp,
@@ -110,8 +132,17 @@ const getStatCards = (orgName: string, empCount: number, activeCount: number) =>
   },
 ];
 
-export function StatCards({ orgName = "My Organization", employeeCount = 0, activeCount = 0 }: StatCardsProps) {
-  const statCards = getStatCards(orgName, employeeCount, activeCount);
+export function StatCards({
+  orgName = "My Organization",
+  employeeCount = 0,
+  activeCount = 0,
+  contractBalance,
+  isETH = true,
+  tokenSymbol,
+  tokenDecimals = 18,
+}: StatCardsProps) {
+  const symbol = tokenSymbol || (isETH ? "ETH" : "TOKEN");
+  const statCards = getStatCards(orgName, employeeCount, activeCount, contractBalance, isETH, symbol, tokenDecimals);
 
   return (
     <motion.div

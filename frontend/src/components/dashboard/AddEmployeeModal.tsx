@@ -10,7 +10,7 @@ import {
   Check,
   Sparkles,
 } from "lucide-react";
-import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { toHex } from "viem";
 import { Modal } from "@/components/shared/Modal";
 import { ORGANIZATION_ABI } from "@/lib/contracts";
@@ -18,9 +18,10 @@ import { getFhevmInstance } from "@/lib/fhevm";
 
 interface AddEmployeeModalProps {
   onClose: () => void;
-  onAddEmployee: () => void;
+  onAddEmployee: (info?: { wallet: string; name: string; role: string }) => void;
   orgAddress: `0x${string}`;
   existingCount: number;
+  tokenSymbol?: string;
 }
 
 type Step = "form" | "encrypting" | "confirming" | "success" | "error";
@@ -30,6 +31,7 @@ export function AddEmployeeModal({
   onAddEmployee,
   orgAddress,
   existingCount,
+  tokenSymbol = "ETH",
 }: AddEmployeeModalProps) {
   const [name, setName] = useState("");
   const [wallet, setWallet] = useState("");
@@ -38,6 +40,7 @@ export function AddEmployeeModal({
   const [step, setStep] = useState<Step>("form");
   const [errorMsg, setErrorMsg] = useState("");
 
+  const { address: connectedAddress } = useAccount();
   const { writeContract, data: txHash, isPending } = useWriteContract();
 
   const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
@@ -51,7 +54,11 @@ export function AddEmployeeModal({
   useEffect(() => {
     if (isTxConfirmed && step === "confirming") {
       setStep("success");
-      setTimeout(() => onAddEmployee(), 1500);
+      setTimeout(() => onAddEmployee({
+        wallet: wallet.trim(),
+        name: name.trim() || `${wallet.trim().slice(0, 6)}...${wallet.trim().slice(-4)}`,
+        role: role.trim() || "Employee",
+      }), 1500);
     }
   }, [isTxConfirmed, step, onAddEmployee]);
 
@@ -65,9 +72,10 @@ export function AddEmployeeModal({
 
       // Get fhEVM instance and encrypt salary
       const fhevmInstance = await getFhevmInstance();
+      // userAddress must be the tx sender (admin), not the employee
       const input = fhevmInstance.createEncryptedInput(
         orgAddress,
-        wallet.trim() as `0x${string}`
+        connectedAddress!
       );
       input.add64(parseInt(salary));
       const encrypted = await input.encrypt();
@@ -242,7 +250,7 @@ export function AddEmployeeModal({
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-[var(--text-muted)]">
                     <Lock className="h-3 w-3" />
-                    <span>cUSDC</span>
+                    <span>{tokenSymbol}</span>
                   </div>
                 </div>
                 <p className="mt-1.5 text-[11px] text-[var(--text-muted)]">

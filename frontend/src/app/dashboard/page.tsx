@@ -14,14 +14,18 @@ import { RunPayrollCard } from "@/components/dashboard/RunPayrollCard";
 import { PayrollHistory } from "@/components/dashboard/PayrollHistory";
 import { AddEmployeeModal } from "@/components/dashboard/AddEmployeeModal";
 import { PayrollConfirmModal } from "@/components/dashboard/PayrollConfirmModal";
+import { DepositCard } from "@/components/dashboard/DepositCard";
 import {
   useOrganizationFactory,
   useOrganization,
 } from "@/hooks/useOrganization";
+import { useERC20 } from "@/hooks/useERC20";
 import { ORGANIZATION_ABI } from "@/lib/contracts";
 import type { Organization, Employee } from "@/lib/mock-data";
 import { fadeUpSmall } from "@/lib/animations";
 import { Star4, CrossMark, Diamond, Dot } from "@/components/shared/Stars";
+
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as `0x${string}`;
 
 type View = "connect" | "org-list" | "create-org" | "dashboard";
 
@@ -54,8 +58,27 @@ export default function DashboardPage() {
   const {
     orgName,
     employees: contractEmployees,
+    paymentToken,
+    contractBalance,
+    createdAt,
+    isETH,
+    deposit,
+    isPending,
     refetchEmployees,
+    refetchBalance,
   } = useOrganization(selectedOrgAddress ?? undefined);
+
+  // Fetch token metadata for ERC-20 orgs
+  const {
+    symbol: tokenSymbol,
+    decimals: tokenDecimals,
+  } = useERC20(
+    !isETH && paymentToken ? paymentToken : undefined,
+    selectedOrgAddress ?? undefined,
+  );
+
+  const displaySymbol = isETH ? "ETH" : tokenSymbol || "TOKEN";
+  const displayDecimals = isETH ? 18 : tokenDecimals ?? 18;
 
   // Batch-fetch real names for all org addresses
   const { data: orgNameResults } = useReadContracts({
@@ -67,18 +90,37 @@ export default function DashboardPage() {
     query: { enabled: (orgAddresses ?? []).length > 0 },
   });
 
+  // Batch-fetch createdAt for all org addresses
+  const { data: orgCreatedAtResults } = useReadContracts({
+    contracts: (orgAddresses ?? []).map((addr) => ({
+      address: addr,
+      abi: ORGANIZATION_ABI,
+      functionName: "createdAt" as const,
+    })),
+    query: { enabled: (orgAddresses ?? []).length > 0 },
+  });
+
   // Build Organization objects from on-chain addresses + fetched names
   const orgs: Organization[] = (orgAddresses ?? []).map((addr, i) => {
     const nameResult = orgNameResults?.[i];
     const fetchedName =
       nameResult?.status === "success" ? (nameResult.result as string) : "";
+
+    const createdAtResult = orgCreatedAtResults?.[i];
+    const createdTimestamp =
+      createdAtResult?.status === "success" ? (createdAtResult.result as bigint) : undefined;
+
+    const createdDate = createdTimestamp
+      ? new Date(Number(createdTimestamp) * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      : "—";
+
     return {
       id: addr,
       name: fetchedName || `${addr.slice(0, 6)}...${addr.slice(-4)}`,
       address: `${addr.slice(0, 6)}...${addr.slice(-4)}`,
       fullAddress: addr,
       employeeCount: 0,
-      lastPayroll: "—",
+      lastPayroll: createdDate,
       role: "admin" as const,
     };
   });
@@ -108,8 +150,8 @@ export default function DashboardPage() {
     setView("dashboard");
   };
 
-  const handleCreateOrg = (name: string) => {
-    createOrganization(name);
+  const handleCreateOrg = (name: string, paymentToken: `0x${string}`) => {
+    createOrganization(name, paymentToken);
   };
 
   const handleBack = () => {
@@ -117,15 +159,39 @@ export default function DashboardPage() {
     setView("org-list");
   };
 
-  const employees: Employee[] = (contractEmployees ?? []).map((addr, i) => ({
-    id: i + 1,
-    name: `${addr.slice(0, 6)}...${addr.slice(-4)}`,
-    address: `${addr.slice(0, 6)}...${addr.slice(-4)}`,
-    fullAddress: addr,
-    role: "Employee",
-    status: "active",
-    lastPaid: "—",
-  }));
+  // Employee metadata stored in localStorage (names/roles aren't on-chain)
+  const getEmployeeMeta = (orgAddr: string, empAddr: string) => {
+    if (typeof window === "undefined") return null;
+    try {
+      const key = `drippay_emp_${orgAddr}_${empAddr}`.toLowerCase();
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  };
+
+  const saveEmployeeMeta = (orgAddr: string, empAddr: string, meta: { name: string; role: string }) => {
+    if (typeof window === "undefined") return;
+    const key = `drippay_emp_${orgAddr}_${empAddr}`.toLowerCase();
+    localStorage.setItem(key, JSON.stringify(meta));
+  };
+
+  const employees: Employee[] = (contractEmployees ?? []).map((addr, i) => {
+    const meta = selectedOrgAddress ? getEmployeeMeta(selectedOrgAddress, addr) : null;
+    return {
+      id: i + 1,
+      name: meta?.name || `${addr.slice(0, 6)}...${addr.slice(-4)}`,
+      address: `${addr.slice(0, 6)}...${addr.slice(-4)}`,
+      fullAddress: addr,
+      role: meta?.role || "Employee",
+      status: "active",
+      lastPaid: "—",
+    };
+  });
+
+  // Format createdAt for the dashboard header
+  const orgCreatedDate = createdAt
+    ? new Date(Number(createdAt) * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : undefined;
 
   return (
     <div className="relative min-h-screen bg-[var(--bg-deep)] overflow-hidden">
@@ -249,7 +315,8 @@ export default function DashboardPage() {
                         {orgName || `${selectedOrgAddress.slice(0, 6)}...${selectedOrgAddress.slice(-4)}`}
                       </h1>
                       <p className="mt-0.5 text-sm text-[var(--text-secondary)]">
-                        Manage your organization&apos;s encrypted payroll
+                        {orgCreatedDate ? `Created ${orgCreatedDate} · ` : ""}
+                        Paying in {displaySymbol}
                       </p>
                     </div>
                   </div>
@@ -275,6 +342,10 @@ export default function DashboardPage() {
               orgName={orgName || "Organization"}
               employeeCount={employees.length}
               activeCount={employees.length}
+              contractBalance={contractBalance}
+              isETH={isETH}
+              tokenSymbol={displaySymbol}
+              tokenDecimals={displayDecimals}
             />
 
             <div className="grid gap-6 lg:grid-cols-3">
@@ -288,6 +359,17 @@ export default function DashboardPage() {
                 transition={{ delay: 0.4, duration: 0.5 }}
                 className="space-y-6"
               >
+                <DepositCard
+                  orgAddress={selectedOrgAddress}
+                  isETH={isETH}
+                  paymentToken={paymentToken}
+                  contractBalance={contractBalance}
+                  tokenSymbol={displaySymbol}
+                  tokenDecimals={displayDecimals}
+                  onDeposit={deposit}
+                  isPending={isPending}
+                  refetchBalance={refetchBalance}
+                />
                 <RunPayrollCard
                   onExecute={() => setShowPayrollConfirm(true)}
                   activeCount={employees.length}
@@ -304,12 +386,19 @@ export default function DashboardPage() {
         {showAddEmployee && selectedOrgAddress && (
           <AddEmployeeModal
             onClose={() => setShowAddEmployee(false)}
-            onAddEmployee={() => {
+            onAddEmployee={(info) => {
+              if (info && selectedOrgAddress) {
+                saveEmployeeMeta(selectedOrgAddress, info.wallet, {
+                  name: info.name,
+                  role: info.role,
+                });
+              }
               refetchEmployees();
               setShowAddEmployee(false);
             }}
             orgAddress={selectedOrgAddress}
             existingCount={employees.length}
+            tokenSymbol={displaySymbol}
           />
         )}
       </AnimatePresence>

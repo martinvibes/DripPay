@@ -14,8 +14,9 @@
     "clean": "hardhat clean"
   },
   "dependencies": {
-    "@fhevm/solidity": "^0.11.1",
     "@fhevm/mock-utils": "^0.4.2",
+    "@fhevm/solidity": "^0.11.1",
+    "@openzeppelin/contracts": "^5.6.1",
     "encrypted-types": "^0.0.4"
   },
   "devDependencies": {

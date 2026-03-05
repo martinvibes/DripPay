@@ -2,20 +2,29 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, ArrowRight, Loader2, Check } from "lucide-react";
+import { Building2, ArrowRight, Loader2, Coins } from "lucide-react";
 
 interface CreateOrgProps {
-  onOrgCreated: (name: string) => void;
+  onOrgCreated: (name: string, paymentToken: `0x${string}`) => void;
   isDeploying?: boolean;
 }
 
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as `0x${string}`;
+
 export function CreateOrg({ onOrgCreated, isDeploying = false }: CreateOrgProps) {
   const [orgName, setOrgName] = useState("");
+  const [tokenType, setTokenType] = useState<"eth" | "erc20">("eth");
+  const [tokenAddress, setTokenAddress] = useState("");
 
   const handleCreate = () => {
     if (!orgName.trim() || isDeploying) return;
-    onOrgCreated(orgName.trim());
+    const paymentToken = tokenType === "eth"
+      ? ZERO_ADDRESS
+      : (tokenAddress.trim() as `0x${string}`);
+    onOrgCreated(orgName.trim(), paymentToken);
   };
+
+  const isValid = orgName.trim() && (tokenType === "eth" || tokenAddress.trim().startsWith("0x"));
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
@@ -58,9 +67,69 @@ export function CreateOrg({ onOrgCreated, isDeploying = false }: CreateOrgProps)
                 />
               </div>
 
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-[var(--text-secondary)]">
+                  Payment Token
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTokenType("eth")}
+                    disabled={isDeploying}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${
+                      tokenType === "eth"
+                        ? "border-[var(--border-accent)] bg-[rgba(0,229,160,0.06)] text-[var(--accent)]"
+                        : "border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-[var(--border-hover)]"
+                    }`}
+                  >
+                    <Coins className="h-4 w-4" />
+                    ETH
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTokenType("erc20")}
+                    disabled={isDeploying}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${
+                      tokenType === "erc20"
+                        ? "border-[var(--border-accent)] bg-[rgba(0,229,160,0.06)] text-[var(--accent)]"
+                        : "border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-[var(--border-hover)]"
+                    }`}
+                  >
+                    <Coins className="h-4 w-4" />
+                    ERC-20
+                  </button>
+                </div>
+              </div>
+
+              <AnimatePresence>
+                {tokenType === "erc20" && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <label className="mb-1.5 block text-xs font-semibold text-[var(--text-secondary)]">
+                      Token Contract Address
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="0x..."
+                      value={tokenAddress}
+                      onChange={(e) => setTokenAddress(e.target.value)}
+                      className="input-field font-mono text-sm"
+                      disabled={isDeploying}
+                    />
+                    <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                      The ERC-20 token contract address for salary payments
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <button
                 onClick={handleCreate}
-                disabled={!orgName.trim() || isDeploying}
+                disabled={!isValid || isDeploying}
                 className="btn-primary w-full !py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isDeploying ? (
