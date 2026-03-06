@@ -11,6 +11,7 @@ interface WithdrawCardProps {
   orgAddress: `0x${string}`;
   tokenSymbol: string;
   tokenDecimals: number;
+  maxBalance: string | null; // human-readable decrypted balance, e.g. "0.003000" — null means not yet decrypted
   onWithdrawSuccess?: () => void;
 }
 
@@ -23,6 +24,7 @@ export function WithdrawCard({
   orgAddress,
   tokenSymbol,
   tokenDecimals,
+  maxBalance,
   onWithdrawSuccess,
 }: WithdrawCardProps) {
   const [amount, setAmount] = useState("");
@@ -39,7 +41,10 @@ export function WithdrawCard({
   });
 
   const numAmount = parseFloat(amount) || 0;
-  const isValid = numAmount > 0;
+  const maxNum = maxBalance ? parseFloat(maxBalance.replace(/,/g, "")) : 0;
+  const hasDecrypted = maxBalance !== null;
+  const exceedsBalance = hasDecrypted && numAmount > maxNum;
+  const isValid = numAmount > 0 && hasDecrypted && !exceedsBalance;
 
   // Track tx confirmation
   useEffect(() => {
@@ -158,33 +163,49 @@ export function WithdrawCard({
               exit={{ opacity: 0 }}
             >
               <div className="space-y-3 mb-4">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)]">
-                      Amount
-                    </label>
-                    <span className="text-[11px] text-[var(--text-muted)]">
-                      {tokenSymbol}
-                    </span>
+                {!hasDecrypted ? (
+                  <div className="rounded-lg bg-[rgba(255,200,50,0.06)] border border-[rgba(255,200,50,0.15)] px-4 py-3">
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      Decrypt your balance first to enable withdrawals.
+                    </p>
                   </div>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      placeholder="0.00"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="input-field !pr-20"
-                      disabled={isWithdrawing}
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-[var(--text-muted)]">
-                      <Lock className="h-3 w-3" />
-                      <span>{tokenSymbol}</span>
+                ) : (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-semibold text-[var(--text-secondary)]">
+                        Amount
+                      </label>
+                      <button
+                        onClick={() => setAmount(String(maxNum))}
+                        disabled={isWithdrawing || maxNum <= 0}
+                        className="text-[11px] text-[var(--accent)] hover:underline disabled:opacity-40 disabled:no-underline"
+                      >
+                        Max: {maxBalance} {tokenSymbol}
+                      </button>
                     </div>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        className={`input-field !pr-20 ${exceedsBalance ? "!border-red-500/50" : ""}`}
+                        disabled={isWithdrawing}
+                        max={maxNum}
+                        step="any"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-[var(--text-muted)]">
+                        <Lock className="h-3 w-3" />
+                        <span>{tokenSymbol}</span>
+                      </div>
+                    </div>
+                    {exceedsBalance && (
+                      <p className="mt-1.5 text-[11px] text-red-400">
+                        Amount exceeds your decrypted balance
+                      </p>
+                    )}
                   </div>
-                  <p className="mt-1.5 text-[11px] text-[var(--text-muted)]">
-                    Amount verified against your encrypted balance on-chain
-                  </p>
-                </div>
+                )}
               </div>
 
               {/* Error message */}

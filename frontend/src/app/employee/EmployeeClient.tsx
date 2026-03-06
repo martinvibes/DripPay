@@ -530,6 +530,7 @@ export default function EmployeePage() {
                   orgAddress={selectedOrgAddress}
                   tokenSymbol={displaySymbol}
                   tokenDecimals={displayDecimals}
+                  maxBalance={isBalanceRevealed ? decryptedBalance : null}
                   onWithdrawSuccess={refetchBalance}
                 />
                 <PrivacyInfo />
