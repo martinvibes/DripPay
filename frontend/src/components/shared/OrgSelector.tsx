@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Building2, Plus, Users, Clock, ChevronRight, Shield } from "lucide-react";
+import { Building2, Plus, Users, Clock, ChevronRight, Shield, Copy, Check } from "lucide-react";
+import { useState } from "react";
 import type { Organization } from "@/lib/mock-data";
 import { fadeUpSmall } from "@/lib/animations";
 
@@ -77,7 +78,7 @@ export function OrgSelector({
                     <Shield className="h-3 w-3" />
                     FHE
                   </span>
-                  <span className="font-mono hidden sm:block">{org.address}</span>
+                  <CopyAddress address={(org as any).fullAddress || org.id} display={org.address} />
                 </div>
               </div>
 
@@ -112,5 +113,32 @@ export function OrgSelector({
         </div>
       </motion.div>
     </div>
+  );
+}
+
+/** Inline copy-to-clipboard for org contract address */
+function CopyAddress({ address, display }: { address: string; display: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="hidden sm:inline-flex items-center gap-1 font-mono hover:text-[var(--accent)] transition-colors"
+      title={`Copy full address: ${address}`}
+    >
+      {display}
+      {copied ? (
+        <Check className="h-3 w-3 text-[var(--accent)]" />
+      ) : (
+        <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+      )}
+    </button>
   );
 }

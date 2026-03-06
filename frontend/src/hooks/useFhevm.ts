@@ -58,8 +58,6 @@ export function useFhevm() {
         const instance = await getFhevmInstance();
         const { publicKey, privateKey } = instance.generateKeypair();
 
-        // Relayer SDK createEIP712 signature:
-        // createEIP712(publicKey, contractAddresses[], startTimestamp, durationDays)
         const now = Math.floor(Date.now() / 1000);
         const eip712 = instance.createEIP712(
           publicKey,
@@ -73,17 +71,44 @@ export function useFhevm() {
           ...(eip712 as any),
         });
 
-        // Use the instance's userDecrypt method
-        const decrypted = await (instance as any).userDecrypt(
-          handle,
+        // Convert bigint handle to hex string for the SDK
+        const handleHex = ("0x" + handle.toString(16).padStart(64, "0")) as `0x${string}`;
+        console.log("[useFhevm] handleHex:", handleHex);
+        console.log("[useFhevm] contractAddress:", contractAddress);
+        console.log("[useFhevm] userAddress:", address);
+
+        // userDecrypt expects HandleContractPair[], not a single handle
+        const results = await instance.userDecrypt(
+          [{ handle: handleHex, contractAddress }],
           privateKey,
           publicKey,
           signature,
-          contractAddress,
-          address
+          [contractAddress],
+          address,
+          now,
+          1,
         );
 
-        return decrypted;
+        console.log("[useFhevm] Full results object:", results);
+        console.log("[useFhevm] Results keys:", Object.keys(results));
+        console.log("[useFhevm] Results entries:", Object.entries(results).map(([k, v]) => `${k} => ${v} (${typeof v})`));
+
+        // Results is Record<`0x${string}`, bigint | boolean | `0x${string}`>
+        // Extract the value for our handle
+        const value = results[handleHex];
+        console.log("[useFhevm] Lookup by handleHex:", value, "type:", typeof value);
+        if (value === undefined) {
+          // Try to find any result
+          const keys = Object.keys(results);
+          console.log("[useFhevm] Value undefined, trying first key from", keys.length, "keys");
+          if (keys.length > 0) {
+            const fallback = results[keys[0] as `0x${string}`];
+            console.log("[useFhevm] Fallback value:", fallback, "type:", typeof fallback);
+            return fallback;
+          }
+          throw new Error("No decryption result returned");
+        }
+        return value;
       } finally {
         setIsDecrypting(false);
       }

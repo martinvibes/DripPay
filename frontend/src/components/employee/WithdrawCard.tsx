@@ -1,61 +1,92 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Wallet, Loader2, Check, ExternalLink, Lock } from "lucide-react";
+import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { parseUnits } from "viem";
+import { ORGANIZATION_ABI } from "@/lib/contracts";
 
 interface WithdrawCardProps {
-  balance: number;
-  onWithdraw: (amount: number) => void;
+  orgAddress: `0x${string}`;
+  tokenSymbol: string;
+  tokenDecimals: number;
+  onWithdrawSuccess?: () => void;
 }
 
 const WITHDRAW_STEPS = [
-  "Decrypting withdrawal amount...",
-  "Processing encrypted transfer...",
+  "Confirm transaction in wallet...",
+  "Waiting for on-chain confirmation...",
 ];
 
-const MOCK_TX = "0x8b2f...4c1a";
-
-export function WithdrawCard({ balance, onWithdraw }: WithdrawCardProps) {
+export function WithdrawCard({
+  orgAddress,
+  tokenSymbol,
+  tokenDecimals,
+  onWithdrawSuccess,
+}: WithdrawCardProps) {
   const [amount, setAmount] = useState("");
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [withdrawStep, setWithdrawStep] = useState(0);
   const [isSuccess, setIsSuccess] = useState(false);
   const [withdrawnAmount, setWithdrawnAmount] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const { writeContract, data: txHash, isPending, error: writeError, reset } = useWriteContract();
+
+  const { isSuccess: isTxConfirmed, data: receipt } = useWaitForTransactionReceipt({
+    hash: txHash,
+    query: { enabled: !!txHash },
+  });
 
   const numAmount = parseFloat(amount) || 0;
-  const isValid = numAmount > 0 && numAmount <= balance;
+  const isValid = numAmount > 0;
 
-  const handleWithdraw = async () => {
-    if (!isValid || isWithdrawing) return;
+  // Track tx confirmation
+  useEffect(() => {
+    if (isTxConfirmed && withdrawStep === 1) {
+      setWithdrawnAmount(amount);
+      setIsSuccess(true);
+      onWithdrawSuccess?.();
 
-    setIsWithdrawing(true);
-    setWithdrawStep(0);
-
-    for (let i = 0; i < WITHDRAW_STEPS.length; i++) {
-      setWithdrawStep(i);
-      await new Promise((r) => setTimeout(r, 1200));
+      setTimeout(() => {
+        setIsSuccess(false);
+        setAmount("");
+        setWithdrawStep(0);
+        reset();
+      }, 3000);
     }
+  }, [isTxConfirmed]);
 
-    setWithdrawStep(WITHDRAW_STEPS.length);
-    await new Promise((r) => setTimeout(r, 400));
-
-    setWithdrawnAmount(amount);
-    setIsSuccess(true);
-    onWithdraw(numAmount);
-
-    // Auto-reset after 3 seconds
-    setTimeout(() => {
-      setIsSuccess(false);
-      setIsWithdrawing(false);
-      setAmount("");
+  // Track write errors
+  useEffect(() => {
+    if (writeError) {
+      setErrorMsg((writeError as any)?.shortMessage || writeError.message || "Transaction failed");
       setWithdrawStep(0);
-    }, 3000);
+    }
+  }, [writeError]);
+
+  const handleWithdraw = () => {
+    if (!isValid) return;
+    setErrorMsg("");
+
+    try {
+      const amountInWei = parseUnits(amount, tokenDecimals);
+      setWithdrawStep(0);
+
+      writeContract({
+        address: orgAddress,
+        abi: ORGANIZATION_ABI,
+        functionName: "withdraw",
+        args: [amountInWei],
+      });
+
+      setWithdrawStep(1);
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Failed to prepare withdrawal");
+    }
   };
 
-  const handleMax = () => {
-    setAmount(balance.toFixed(2));
-  };
+  const isWithdrawing = isPending || (!!txHash && !isTxConfirmed && !writeError);
 
   return (
     <div className="accent-card overflow-hidden">
@@ -88,7 +119,6 @@ export function WithdrawCard({ balance, onWithdraw }: WithdrawCardProps) {
 
         <AnimatePresence mode="wait">
           {isSuccess ? (
-            /* ═══ Success State ═══ */
             <motion.div
               key="success"
               initial={{ opacity: 0, scale: 0.95 }}
@@ -108,18 +138,19 @@ export function WithdrawCard({ balance, onWithdraw }: WithdrawCardProps) {
                 className="font-bold gradient-text text-lg mb-1"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                {withdrawnAmount} cUSDC
+                {withdrawnAmount} {tokenSymbol}
               </p>
               <p className="text-xs text-[var(--text-secondary)]">
                 Withdrawn successfully
               </p>
-              <div className="mt-2 flex items-center justify-center gap-1 text-[10px] text-[var(--text-muted)]">
-                <span className="font-mono">{MOCK_TX}</span>
-                <ExternalLink className="h-2.5 w-2.5" />
-              </div>
+              {txHash && (
+                <div className="mt-2 flex items-center justify-center gap-1 text-[10px] text-[var(--text-muted)]">
+                  <span className="font-mono">{txHash.slice(0, 8)}...{txHash.slice(-6)}</span>
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </div>
+              )}
             </motion.div>
           ) : (
-            /* ═══ Form State ═══ */
             <motion.div
               key="form"
               initial={{ opacity: 0 }}
@@ -133,7 +164,7 @@ export function WithdrawCard({ balance, onWithdraw }: WithdrawCardProps) {
                       Amount
                     </label>
                     <span className="text-[11px] text-[var(--text-muted)]">
-                      Balance: {balance.toLocaleString()} cUSDC
+                      {tokenSymbol}
                     </span>
                   </div>
                   <div className="relative">
@@ -145,21 +176,23 @@ export function WithdrawCard({ balance, onWithdraw }: WithdrawCardProps) {
                       className="input-field !pr-20"
                       disabled={isWithdrawing}
                     />
-                    <button
-                      onClick={handleMax}
-                      disabled={isWithdrawing}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors disabled:opacity-40"
-                    >
-                      MAX
-                    </button>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-[var(--text-muted)]">
+                      <Lock className="h-3 w-3" />
+                      <span>{tokenSymbol}</span>
+                    </div>
                   </div>
-                  {numAmount > balance && (
-                    <p className="mt-1 text-[11px] text-red-400">
-                      Exceeds available balance
-                    </p>
-                  )}
+                  <p className="mt-1.5 text-[11px] text-[var(--text-muted)]">
+                    Amount verified against your encrypted balance on-chain
+                  </p>
                 </div>
               </div>
+
+              {/* Error message */}
+              {errorMsg && (
+                <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 p-3">
+                  <p className="text-xs text-red-400">{errorMsg}</p>
+                </div>
+              )}
 
               {/* Withdraw progress */}
               <AnimatePresence>

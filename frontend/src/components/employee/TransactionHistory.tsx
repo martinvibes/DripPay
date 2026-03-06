@@ -1,15 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Clock, ArrowDownRight, ArrowUpRight, Lock, Check } from "lucide-react";
-import { EncryptedValue } from "@/components/shared/EncryptedValue";
-import { mockTransactions } from "@/lib/mock-data";
+import { Clock, Shield } from "lucide-react";
 
-interface TransactionHistoryProps {
-  isRevealed: boolean;
-}
-
-export function TransactionHistory({ isRevealed }: TransactionHistoryProps) {
+export function TransactionHistory() {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -29,62 +23,17 @@ export function TransactionHistory({ isRevealed }: TransactionHistoryProps) {
         </div>
       </div>
 
-      <div className="divide-y divide-[var(--border)]">
-        {mockTransactions.map((tx, i) => (
-          <motion.div
-            key={tx.id}
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 + i * 0.06 }}
-            className="flex items-center justify-between px-5 py-4 hover:bg-[rgba(255,255,255,0.01)] transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-                  tx.type === "credit"
-                    ? "bg-[rgba(0,229,160,0.1)]"
-                    : "bg-[rgba(255,255,255,0.04)]"
-                }`}
-              >
-                {tx.type === "credit" ? (
-                  <ArrowDownRight className="h-4 w-4 text-[var(--accent)]" />
-                ) : (
-                  <ArrowUpRight className="h-4 w-4 text-[var(--text-secondary)]" />
-                )}
-              </div>
-              <div>
-                <p className="text-sm font-medium">{tx.label}</p>
-                <p className="text-xs text-[var(--text-muted)]">
-                  {tx.date} &middot;{" "}
-                  <span className="font-mono">{tx.txHash}</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="text-right">
-              <div className="flex items-center gap-1.5">
-                {isRevealed && tx.amount ? (
-                  <span
-                    className={`text-sm font-semibold ${
-                      tx.type === "credit"
-                        ? "text-[var(--accent)]"
-                        : "text-[var(--text-secondary)]"
-                    }`}
-                  >
-                    {tx.type === "credit" ? "+" : "-"}
-                    {tx.amount} cUSDC
-                  </span>
-                ) : (
-                  <EncryptedValue bars={4} />
-                )}
-              </div>
-              <span className="inline-flex items-center gap-1 text-xs text-[var(--text-muted)]">
-                <Check className="h-3 w-3" />
-                {tx.status}
-              </span>
-            </div>
-          </motion.div>
-        ))}
+      <div className="p-8 text-center">
+        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-muted)]">
+          <Shield className="h-5 w-5 text-[var(--accent)]" />
+        </div>
+        <p className="text-sm text-[var(--text-secondary)] mb-1">
+          Encrypted on-chain
+        </p>
+        <p className="text-xs text-[var(--text-muted)]">
+          Transaction history is encrypted. Payroll credits and withdrawals are
+          recorded on-chain with FHE privacy.
+        </p>
       </div>
     </motion.div>
   );

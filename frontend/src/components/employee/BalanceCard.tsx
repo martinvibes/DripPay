@@ -12,12 +12,16 @@ import {
 } from "lucide-react";
 
 interface BalanceCardProps {
+  balance: string | null;
+  tokenSymbol: string;
   isRevealed: boolean;
   isDecrypting: boolean;
   onToggleReveal: () => void;
 }
 
 export function BalanceCard({
+  balance,
+  tokenSymbol,
   isRevealed,
   isDecrypting,
   onToggleReveal,
@@ -40,16 +44,16 @@ export function BalanceCard({
                 Available Balance
               </p>
               <div className="flex items-center gap-4">
-                {isRevealed ? (
+                {isRevealed && balance !== null ? (
                   <motion.span
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="text-4xl font-extrabold tracking-tight md:text-5xl"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
-                    <span className="gradient-text">12,500.00</span>
+                    <span className="gradient-text">{balance}</span>
                     <span className="ml-2 text-lg text-[var(--text-muted)]">
-                      cUSDC
+                      {tokenSymbol}
                     </span>
                   </motion.span>
                 ) : (
