@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Plus, Copy, Check, Users } from "lucide-react";
+import { Search, Plus, Copy, Check, Users, Trash2, Loader2 } from "lucide-react";
 import { EncryptedValue } from "@/components/shared/EncryptedValue";
 import type { Employee } from "@/lib/mock-data";
 
 interface EmployeeTableProps {
   employees: Employee[];
   onAddEmployee: () => void;
+  onRemoveEmployee?: (address: `0x${string}`) => void;
+  isRemoving?: boolean;
 }
 
-export function EmployeeTable({ employees, onAddEmployee }: EmployeeTableProps) {
+export function EmployeeTable({ employees, onAddEmployee, onRemoveEmployee, isRemoving }: EmployeeTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -80,7 +82,7 @@ export function EmployeeTable({ employees, onAddEmployee }: EmployeeTableProps) 
           <table className="w-full">
             <thead>
               <tr className="border-b border-[var(--border)]">
-                {["Employee", "Role", "Wallet", "Salary", "Last Paid", "Status"].map(
+                {["Employee", "Role", "Wallet", "Salary", "Last Paid", "Status", ""].map(
                   (h) => (
                     <th
                       key={h}
@@ -99,6 +101,8 @@ export function EmployeeTable({ employees, onAddEmployee }: EmployeeTableProps) 
                   employee={emp}
                   copied={copied}
                   onCopy={handleCopy}
+                  onRemove={onRemoveEmployee}
+                  isRemoving={isRemoving}
                   index={i}
                 />
               ))}
@@ -114,11 +118,15 @@ function EmployeeRow({
   employee: emp,
   copied,
   onCopy,
+  onRemove,
+  isRemoving,
   index,
 }: {
   employee: Employee;
   copied: string | null;
   onCopy: (text: string) => void;
+  onRemove?: (address: `0x${string}`) => void;
+  isRemoving?: boolean;
   index: number;
 }) {
   const initials = emp.name
@@ -178,6 +186,22 @@ function EmployeeRow({
           />
           {emp.status}
         </span>
+      </td>
+      <td className="px-5 py-3.5">
+        {onRemove && (
+          <button
+            onClick={() => onRemove(emp.fullAddress as `0x${string}`)}
+            disabled={isRemoving}
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40"
+            title="Remove employee"
+          >
+            {isRemoving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5" />
+            )}
+          </button>
+        )}
       </td>
     </motion.tr>
   );

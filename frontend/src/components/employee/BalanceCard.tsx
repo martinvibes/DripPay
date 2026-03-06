@@ -135,6 +135,16 @@ export function BalanceCard({
             </div>
           </div>
 
+          {/* FHE timing note */}
+          {isRevealed && balance === "0.000000" && (
+            <div className="mt-4 rounded-lg bg-[rgba(255,200,50,0.06)] border border-[rgba(255,200,50,0.15)] px-4 py-3">
+              <p className="text-[11px] text-[var(--text-secondary)]">
+                If you just ran payroll, the FHE coprocessor may still be computing your encrypted balance.
+                Try decrypting again in a few seconds.
+              </p>
+            </div>
+          )}
+
           {/* Decryption process explainer */}
           <AnimatePresence>
             {isDecrypting && (

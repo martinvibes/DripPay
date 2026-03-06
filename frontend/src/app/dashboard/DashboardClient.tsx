@@ -63,6 +63,7 @@ export default function DashboardPage() {
     createdAt,
     isETH,
     deposit,
+    removeEmployee,
     isPending,
     refetchEmployees,
     refetchBalance,
@@ -367,6 +368,11 @@ export default function DashboardPage() {
               <EmployeeTable
                 employees={employees}
                 onAddEmployee={() => setShowAddEmployee(true)}
+                onRemoveEmployee={(addr) => {
+                  removeEmployee(addr);
+                  setTimeout(() => refetchEmployees(), 2000);
+                }}
+                isRemoving={isPending}
               />
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
@@ -414,6 +420,7 @@ export default function DashboardPage() {
             orgAddress={selectedOrgAddress}
             existingCount={employees.length}
             tokenSymbol={displaySymbol}
+            tokenDecimals={displayDecimals}
           />
         )}
       </AnimatePresence>

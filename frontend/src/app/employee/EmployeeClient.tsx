@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Shield, Lock, Fingerprint, Search, Loader2 } from "lucide-react";
 import { useAccount, useReadContract } from "wagmi";
+import { formatUnits } from "viem";
 import { AppNav } from "@/components/shared/AppNav";
 import { WalletConnect } from "@/components/shared/WalletConnect";
 import { BalanceCard } from "@/components/employee/BalanceCard";
@@ -163,6 +164,15 @@ export default function EmployeePage() {
     setDecryptError("");
   };
 
+  /** Attempt a single decryption of the balance handle */
+  const attemptDecrypt = async (handleHex: `0x${string}`): Promise<bigint | boolean | `0x${string}`> => {
+    if (!selectedOrgAddress) throw new Error("No org selected");
+    console.log("[Decrypt] Attempting decrypt for handle:", handleHex);
+    const result = await decryptBalance(handleHex, selectedOrgAddress);
+    console.log("[Decrypt] Result:", result, "type:", typeof result);
+    return result;
+  };
+
   const handleRevealBalance = async () => {
     if (isBalanceRevealed) {
       setIsBalanceRevealed(false);
@@ -178,46 +188,46 @@ export default function EmployeePage() {
     try {
       // Always refetch the handle to get the latest on-chain value
       const { data: freshHandle } = await refetchHandle();
-      console.log("[Decrypt] freshHandle from refetch:", freshHandle);
-      console.log("[Decrypt] cached balanceHandle:", balanceHandle);
       const handle = (freshHandle ?? balanceHandle) as `0x${string}`;
-      console.log("[Decrypt] using handle:", handle);
-      if (!handle) {
-        console.log("[Decrypt] No handle found, showing 0");
-        setDecryptedBalance("0.000000");
-        setIsBalanceRevealed(true);
-        setIsDecrypting(false);
-        return;
-      }
-      const handleBigInt = BigInt(handle);
-      console.log("[Decrypt] handleBigInt:", handleBigInt.toString());
+      console.log("[Decrypt] Handle from contract:", handle);
 
-      if (handleBigInt === BigInt(0)) {
-        console.log("[Decrypt] Handle is zero, no balance set");
+      if (!handle || handle === "0x0000000000000000000000000000000000000000000000000000000000000000") {
+        console.log("[Decrypt] Handle is zero/empty, no balance set");
         setDecryptedBalance("0.000000");
         setIsBalanceRevealed(true);
         setIsDecrypting(false);
         return;
       }
 
-      console.log("[Decrypt] Calling decryptBalance with handle and org:", selectedOrgAddress);
-      const result = await decryptBalance(handleBigInt, selectedOrgAddress);
-      console.log("[Decrypt] Raw result from decryptBalance:", result);
-      console.log("[Decrypt] typeof result:", typeof result);
-      // FHE values are raw integers (salary entered as e.g. 1000, not in wei)
-      const num = Number(result);
-      console.log("[Decrypt] num:", num);
+      // Pass handle directly as hex string (matching Zama's official pattern)
+      let result = await attemptDecrypt(handle);
+
+      // If result is 0, the FHE coprocessor computation may not have settled yet.
+      // Retry once after a short delay.
+      if (result === BigInt(0)) {
+        console.log("[Decrypt] Got 0 — retrying in 5s (FHE coprocessor may still be computing)...");
+        setDecryptError("FHE computation may still be processing. Retrying...");
+        await new Promise(r => setTimeout(r, 5000));
+        result = await attemptDecrypt(handle);
+      }
+
+      // Convert from smallest unit (wei) back to human-readable
+      const raw = typeof result === "bigint" ? result : BigInt(String(result));
+      console.log("[Decrypt] Raw decrypted value (smallest unit):", raw.toString());
+      const humanReadable = formatUnits(raw, displayDecimals);
+      console.log("[Decrypt] Human-readable:", humanReadable, displaySymbol);
+      // Format with appropriate decimal places
+      const num = parseFloat(humanReadable);
       const formatted = num.toLocaleString(undefined, {
         minimumFractionDigits: 6,
         maximumFractionDigits: 6,
       });
-      console.log("[Decrypt] formatted:", formatted);
       setDecryptedBalance(formatted);
+      setDecryptError("");
       setIsBalanceRevealed(true);
     } catch (err: any) {
       console.error("[Decrypt] Error:", err);
       setDecryptError(err?.message || "Failed to decrypt balance");
-      // For hackathon: show a user-friendly message
       setDecryptedBalance(null);
     } finally {
       setIsDecrypting(false);

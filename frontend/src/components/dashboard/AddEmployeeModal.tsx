@@ -11,7 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { toHex } from "viem";
+import { toHex, parseUnits } from "viem";
 import { Modal } from "@/components/shared/Modal";
 import { ORGANIZATION_ABI } from "@/lib/contracts";
 import { getFhevmInstance } from "@/lib/fhevm";
@@ -22,6 +22,7 @@ interface AddEmployeeModalProps {
   orgAddress: `0x${string}`;
   existingCount: number;
   tokenSymbol?: string;
+  tokenDecimals?: number;
 }
 
 type Step = "form" | "encrypting" | "confirming" | "success" | "error";
@@ -32,6 +33,7 @@ export function AddEmployeeModal({
   orgAddress,
   existingCount,
   tokenSymbol = "ETH",
+  tokenDecimals = 18,
 }: AddEmployeeModalProps) {
   const [name, setName] = useState("");
   const [wallet, setWallet] = useState("");
@@ -72,13 +74,22 @@ export function AddEmployeeModal({
 
       // Get fhEVM instance and encrypt salary
       const fhevmInstance = await getFhevmInstance();
+      // Convert salary to smallest unit (wei for ETH, or token decimals for ERC-20)
+      // e.g. "0.003" ETH → 3000000000000000 wei
+      const salaryInSmallestUnit = parseUnits(salary, tokenDecimals);
+      console.log("[AddEmployee] Salary input:", salary, tokenSymbol);
+      console.log("[AddEmployee] Converted to smallest unit:", salaryInSmallestUnit.toString(), `(${tokenDecimals} decimals)`);
+      console.log("[AddEmployee] Contract:", orgAddress, "Sender:", connectedAddress);
+
       // userAddress must be the tx sender (admin), not the employee
       const input = fhevmInstance.createEncryptedInput(
         orgAddress,
         connectedAddress!
       );
-      input.add64(parseInt(salary));
+      input.add64(salaryInSmallestUnit);
       const encrypted = await input.encrypt();
+      console.log("[AddEmployee] Encrypted handle:", toHex(encrypted.handles[0]));
+      console.log("[AddEmployee] Proof length:", encrypted.inputProof.length);
 
       setStep("confirming");
 

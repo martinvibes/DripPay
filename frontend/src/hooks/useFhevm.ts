@@ -42,14 +42,13 @@ export function useFhevm() {
   );
 
   /**
-   * Decrypt (re-encrypt) an encrypted balance handle.
-   * Uses the relayer SDK's user decryption flow.
-   *
-   * Note: The relayer SDK uses createEIP712 with different params than fhevmjs.
-   * Full implementation requires: contractAddresses[], startTimestamp, durationDays.
+   * Decrypt an encrypted balance handle.
+   * Matches Zama's official useFHEDecrypt pattern:
+   * - Pass handle directly as hex string (no BigInt conversion)
+   * - Uses createEIP712 + userDecrypt with contractAddresses[], startTimestamp, durationDays
    */
   const decryptBalance = useCallback(
-    async (handle: bigint, contractAddress: `0x${string}`) => {
+    async (handleHex: `0x${string}`, contractAddress: `0x${string}`) => {
       if (!address || !walletClient)
         throw new Error("Wallet not connected");
 
@@ -71,13 +70,11 @@ export function useFhevm() {
           ...(eip712 as any),
         });
 
-        // Convert bigint handle to hex string for the SDK
-        const handleHex = ("0x" + handle.toString(16).padStart(64, "0")) as `0x${string}`;
         console.log("[useFhevm] handleHex:", handleHex);
         console.log("[useFhevm] contractAddress:", contractAddress);
         console.log("[useFhevm] userAddress:", address);
 
-        // userDecrypt expects HandleContractPair[], not a single handle
+        // Pass handle directly as hex string — matches Zama's official pattern
         const results = await instance.userDecrypt(
           [{ handle: handleHex, contractAddress }],
           privateKey,
@@ -89,26 +86,34 @@ export function useFhevm() {
           1,
         );
 
-        console.log("[useFhevm] Full results object:", results);
-        console.log("[useFhevm] Results keys:", Object.keys(results));
-        console.log("[useFhevm] Results entries:", Object.entries(results).map(([k, v]) => `${k} => ${v} (${typeof v})`));
+        console.log("[useFhevm] Full results:", results);
 
         // Results is Record<`0x${string}`, bigint | boolean | `0x${string}`>
-        // Extract the value for our handle
+        // Try exact key match first, then fallback to first result
         const value = results[handleHex];
-        console.log("[useFhevm] Lookup by handleHex:", value, "type:", typeof value);
-        if (value === undefined) {
-          // Try to find any result
-          const keys = Object.keys(results);
-          console.log("[useFhevm] Value undefined, trying first key from", keys.length, "keys");
-          if (keys.length > 0) {
-            const fallback = results[keys[0] as `0x${string}`];
-            console.log("[useFhevm] Fallback value:", fallback, "type:", typeof fallback);
-            return fallback;
-          }
-          throw new Error("No decryption result returned");
+        if (value !== undefined) {
+          console.log("[useFhevm] Decrypted value:", value, "type:", typeof value);
+          return value;
         }
-        return value;
+
+        // Key might differ in case — try case-insensitive lookup
+        const lowerHandle = handleHex.toLowerCase();
+        for (const [key, val] of Object.entries(results)) {
+          if (key.toLowerCase() === lowerHandle) {
+            console.log("[useFhevm] Decrypted value (case-insensitive):", val);
+            return val;
+          }
+        }
+
+        // Last resort: return first value
+        const keys = Object.keys(results);
+        if (keys.length > 0) {
+          const fallback = results[keys[0] as `0x${string}`];
+          console.log("[useFhevm] Fallback value:", fallback);
+          return fallback;
+        }
+
+        throw new Error("No decryption result returned");
       } finally {
         setIsDecrypting(false);
       }
