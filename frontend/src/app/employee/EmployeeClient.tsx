@@ -516,7 +516,11 @@ export default function EmployeePage() {
                   isDecrypting={isDecrypting}
                   onToggleReveal={handleRevealBalance}
                 />
-                <TransactionHistory />
+                <TransactionHistory
+                  orgAddress={selectedOrgAddress}
+                  tokenSymbol={displaySymbol}
+                  tokenDecimals={displayDecimals}
+                />
               </div>
 
               {/* Right Column */}

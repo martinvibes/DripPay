@@ -395,7 +395,11 @@ export default function DashboardPage() {
                   onExecute={() => setShowPayrollConfirm(true)}
                   activeCount={employees.length}
                 />
-                <PayrollHistory />
+                <PayrollHistory
+                  orgAddress={selectedOrgAddress}
+                  tokenSymbol={displaySymbol}
+                  tokenDecimals={displayDecimals}
+                />
               </motion.div>
             </div>
           </motion.div>

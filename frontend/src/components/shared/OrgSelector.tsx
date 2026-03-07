@@ -128,9 +128,12 @@ function CopyAddress({ address, display }: { address: string; display: string })
   };
 
   return (
-    <button
+    <span
+      role="button"
+      tabIndex={0}
       onClick={handleCopy}
-      className="hidden sm:inline-flex items-center gap-1 font-mono hover:text-[var(--accent)] transition-colors"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleCopy(e as any); }}
+      className="hidden sm:inline-flex items-center gap-1 font-mono hover:text-[var(--accent)] transition-colors cursor-pointer"
       title={`Copy full address: ${address}`}
     >
       {display}
@@ -139,6 +142,6 @@ function CopyAddress({ address, display }: { address: string; display: string })
       ) : (
         <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
       )}
-    </button>
+    </span>
   );
 }
