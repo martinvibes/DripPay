@@ -20,6 +20,7 @@ import {
   useOrganization,
 } from "@/hooks/useOrganization";
 import { useERC20 } from "@/hooks/useERC20";
+import { useContractEvents } from "@/hooks/useContractEvents";
 import { ORGANIZATION_ABI } from "@/lib/contracts";
 import type { Organization, Employee } from "@/lib/mock-data";
 import { fadeUpSmall } from "@/lib/animations";
@@ -68,6 +69,14 @@ export default function DashboardPage() {
     refetchEmployees,
     refetchBalance,
   } = useOrganization(selectedOrgAddress ?? undefined);
+
+  // Fetch payroll run count from on-chain events
+  const { events: payrollEvents } = useContractEvents({
+    address: selectedOrgAddress ?? undefined,
+    abi: ORGANIZATION_ABI as any,
+    eventName: "PayrollExecuted",
+    enabled: !!selectedOrgAddress,
+  });
 
   // Fetch token metadata for ERC-20 orgs
   const {
@@ -362,6 +371,7 @@ export default function DashboardPage() {
               isETH={isETH}
               tokenSymbol={displaySymbol}
               tokenDecimals={displayDecimals}
+              payrollRunCount={payrollEvents.length}
             />
 
             <div className="grid gap-6 lg:grid-cols-3">
@@ -423,6 +433,7 @@ export default function DashboardPage() {
             }}
             orgAddress={selectedOrgAddress}
             existingCount={employees.length}
+            existingAddresses={contractEmployees as `0x${string}`[] ?? []}
             tokenSymbol={displaySymbol}
             tokenDecimals={displayDecimals}
           />

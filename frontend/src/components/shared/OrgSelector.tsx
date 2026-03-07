@@ -9,6 +9,7 @@ import { fadeUpSmall } from "@/lib/animations";
 interface OrgSelectorProps {
   title: string;
   subtitle: string;
+  
   orgs: Organization[];
   onSelect: (org: Organization) => void;
   onCreateNew?: () => void;

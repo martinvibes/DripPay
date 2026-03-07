@@ -24,8 +24,9 @@ export function PayrollConfirmModal({
 }: PayrollConfirmModalProps) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const { writeContract, data: txHash, isPending } = useWriteContract();
+  const { writeContract, data: txHash, isPending, error: writeError, reset: resetWrite } = useWriteContract();
 
   const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
     hash: txHash,
@@ -40,6 +41,15 @@ export function PayrollConfirmModal({
       onExecute();
     }
   }, [isTxConfirmed, isSuccess, onExecute]);
+
+  // When user rejects or tx fails, reset to confirm state
+  useEffect(() => {
+    if (writeError && isExecuting) {
+      setErrorMsg((writeError as any)?.shortMessage || writeError.message || "Transaction failed");
+      setIsExecuting(false);
+      resetWrite();
+    }
+  }, [writeError, isExecuting, resetWrite]);
 
   const handleExecute = () => {
     if (isExecuting) return;
@@ -239,13 +249,19 @@ export function PayrollConfirmModal({
                 })}
               </div>
 
+              {errorMsg && (
+                <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3">
+                  <p className="text-xs text-red-400">{errorMsg}</p>
+                </div>
+              )}
+
               <div className="flex gap-3 pt-1">
                 <button onClick={onClose} className="btn-secondary flex-1 !py-3">
                   Cancel
                 </button>
-                <button onClick={handleExecute} className="btn-primary flex-1 !py-3">
+                <button onClick={() => { setErrorMsg(""); handleExecute(); }} className="btn-primary flex-1 !py-3">
                   <Zap className="h-4 w-4" />
-                  Execute
+                  {errorMsg ? "Retry" : "Execute"}
                 </button>
               </div>
             </div>

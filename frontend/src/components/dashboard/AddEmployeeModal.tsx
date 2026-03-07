@@ -21,6 +21,7 @@ interface AddEmployeeModalProps {
   onAddEmployee: (info?: { wallet: string; name: string; role: string }) => void;
   orgAddress: `0x${string}`;
   existingCount: number;
+  existingAddresses?: `0x${string}`[];
   tokenSymbol?: string;
   tokenDecimals?: number;
 }
@@ -32,6 +33,7 @@ export function AddEmployeeModal({
   onAddEmployee,
   orgAddress,
   existingCount,
+  existingAddresses = [],
   tokenSymbol = "ETH",
   tokenDecimals = 18,
 }: AddEmployeeModalProps) {
@@ -43,7 +45,7 @@ export function AddEmployeeModal({
   const [errorMsg, setErrorMsg] = useState("");
 
   const { address: connectedAddress } = useAccount();
-  const { writeContract, data: txHash, isPending } = useWriteContract();
+  const { writeContract, data: txHash, isPending, error: writeError, reset: resetWrite } = useWriteContract();
 
   const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
     hash: txHash,
@@ -64,7 +66,20 @@ export function AddEmployeeModal({
     }
   }, [isTxConfirmed, step, onAddEmployee]);
 
-  const isValid = wallet.trim() && salary.trim();
+  // When user rejects or tx fails, show error
+  useEffect(() => {
+    if (writeError && step === "confirming") {
+      setErrorMsg((writeError as any)?.shortMessage || writeError.message || "Transaction failed");
+      setStep("error");
+      resetWrite();
+    }
+  }, [writeError, step, resetWrite]);
+
+  const trimmedWallet = wallet.trim().toLowerCase();
+  const isDuplicate = trimmedWallet.startsWith("0x") && existingAddresses.some(
+    (addr) => addr.toLowerCase() === trimmedWallet
+  );
+  const isValid = wallet.trim() && salary.trim() && !isDuplicate;
 
   const handleSubmit = async () => {
     if (!isValid || step !== "form") return;
@@ -241,9 +256,14 @@ export function AddEmployeeModal({
                   placeholder="0x..."
                   value={wallet}
                   onChange={(e) => setWallet(e.target.value)}
-                  className="input-field font-mono text-sm"
+                  className={`input-field font-mono text-sm ${isDuplicate ? "!border-red-500/50" : ""}`}
                   disabled={step !== "form"}
                 />
+                {isDuplicate && (
+                  <p className="mt-1.5 text-[11px] text-red-400">
+                    This address is already an employee
+                  </p>
+                )}
               </div>
 
               <div>

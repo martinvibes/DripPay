@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { Building2, Users, Shield, TrendingUp, Wallet } from "lucide-react";
 import { fadeUpSmall, staggerFast } from "@/lib/animations";
-import { payrollHistory } from "@/lib/mock-data";
 
 interface StatCardsProps {
   orgName?: string;
@@ -13,6 +12,7 @@ interface StatCardsProps {
   isETH?: boolean;
   tokenSymbol?: string;
   tokenDecimals?: number;
+  payrollRunCount?: number;
 }
 
 /** Mini sparkline SVG — gives each card a visual pulse */
@@ -101,6 +101,7 @@ const getStatCards = (
   isETH: boolean,
   tokenSymbol: string,
   tokenDecimals: number,
+  payrollRunCount: number,
 ) => [
   {
     icon: Building2,
@@ -126,7 +127,7 @@ const getStatCards = (
   {
     icon: TrendingUp,
     label: "Total Runs",
-    value: payrollHistory.length.toString(),
+    value: payrollRunCount.toString(),
     sub: "All encrypted",
     spark: sparkData.payrolls,
   },
@@ -140,9 +141,10 @@ export function StatCards({
   isETH = true,
   tokenSymbol,
   tokenDecimals = 18,
+  payrollRunCount = 0,
 }: StatCardsProps) {
   const symbol = tokenSymbol || (isETH ? "ETH" : "TOKEN");
-  const statCards = getStatCards(orgName, employeeCount, activeCount, contractBalance, isETH, symbol, tokenDecimals);
+  const statCards = getStatCards(orgName, employeeCount, activeCount, contractBalance, isETH, symbol, tokenDecimals, payrollRunCount);
 
   return (
     <motion.div
