@@ -103,10 +103,10 @@ export const ORGANIZATION_ABI = [
   // Functions
   {
     type: "function",
-    name: "addEmployee",
+    name: "addEmployees",
     inputs: [
-      { name: "employee", type: "address" },
-      { name: "encryptedSalary", type: "bytes32" },
+      { name: "employees", type: "address[]" },
+      { name: "encryptedSalaries", type: "bytes32[]" },
       { name: "proof", type: "bytes" },
     ],
     outputs: [],

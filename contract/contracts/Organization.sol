@@ -87,32 +87,46 @@ contract Organization is ZamaEthereumConfig {
 
     // ── Admin Functions ──────────────────────────────────────────────────
 
-    /// @notice Add an employee with an encrypted salary
-    /// @param employee The employee wallet address
-    /// @param encryptedSalary The encrypted salary input handle
-    /// @param proof The input proof for FHE verification
-    function addEmployee(
-        address employee,
-        externalEuint64 encryptedSalary,
+    // /// @notice Add a single employee with an encrypted salary (deprecated — use addEmployees)
+    // function addEmployee(
+    //     address employee,
+    //     externalEuint64 encryptedSalary,
+    //     bytes calldata proof
+    // ) external onlyAdmin { ... }
+
+    /// @notice Add one or more employees with encrypted salaries in a single transaction
+    /// @param employees Array of employee wallet addresses
+    /// @param encryptedSalaries Array of encrypted salary input handles (one per employee)
+    /// @param proof Shared input proof for all FHE handles (from one createEncryptedInput batch)
+    function addEmployees(
+        address[] calldata employees,
+        externalEuint64[] calldata encryptedSalaries,
         bytes calldata proof
     ) external onlyAdmin {
-        if (isEmployee[employee]) revert AlreadyEmployee();
+        uint256 len = employees.length;
+        require(len == encryptedSalaries.length, "Length mismatch");
+        require(len > 0, "Empty array");
 
-        euint64 salary = FHE.fromExternal(encryptedSalary, proof);
+        for (uint256 i = 0; i < len; i++) {
+            address emp = employees[i];
+            if (isEmployee[emp]) revert AlreadyEmployee();
 
-        // Store salary — grant access to contract and employee
-        _salaries[employee] = FHE.allowThis(salary);
-        FHE.allow(_salaries[employee], employee);
-        FHE.allow(_salaries[employee], admin);
+            euint64 salary = FHE.fromExternal(encryptedSalaries[i], proof);
 
-        // Initialize balance to encrypted zero
-        _balances[employee] = FHE.allowThis(FHE.asEuint64(0));
-        FHE.allow(_balances[employee], employee);
+            // Store salary — grant access to contract and employee
+            _salaries[emp] = FHE.allowThis(salary);
+            FHE.allow(_salaries[emp], emp);
+            FHE.allow(_salaries[emp], admin);
 
-        isEmployee[employee] = true;
-        _employees.push(employee);
+            // Initialize balance to encrypted zero
+            _balances[emp] = FHE.allowThis(FHE.asEuint64(0));
+            FHE.allow(_balances[emp], emp);
 
-        emit EmployeeAdded(employee);
+            isEmployee[emp] = true;
+            _employees.push(emp);
+
+            emit EmployeeAdded(emp);
+        }
     }
 
     /// @notice Remove an employee

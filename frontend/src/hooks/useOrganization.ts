@@ -63,17 +63,17 @@ export function useOrganizationFactory() {
 export function useOrganization(orgAddress?: `0x${string}`) {
   const { writeContract, isPending } = useWriteContract();
 
-  const addEmployee = (
-    employee: `0x${string}`,
-    encryptedSalary: `0x${string}`,
+  const addEmployees = (
+    employees: `0x${string}`[],
+    encryptedSalaries: `0x${string}`[],
     proof: `0x${string}`
   ) => {
     if (!orgAddress) return;
     writeContract({
       address: orgAddress,
       abi: ORGANIZATION_ABI,
-      functionName: "addEmployee",
-      args: [employee, encryptedSalary, proof],
+      functionName: "addEmployees",
+      args: [employees, encryptedSalaries, proof],
     });
   };
 
@@ -172,7 +172,7 @@ export function useOrganization(orgAddress?: `0x${string}`) {
   const isETH = !paymentToken || paymentToken === ZERO_ADDRESS;
 
   return {
-    addEmployee,
+    addEmployees,
     removeEmployee,
     runPayroll,
     withdraw,
