@@ -421,12 +421,14 @@ export default function DashboardPage() {
         {showAddEmployee && selectedOrgAddress && (
           <AddEmployeeModal
             onClose={() => setShowAddEmployee(false)}
-            onAddEmployee={(info) => {
-              if (info && selectedOrgAddress) {
-                saveEmployeeMeta(selectedOrgAddress, info.wallet, {
-                  name: info.name,
-                  role: info.role,
-                });
+            onAddEmployee={(infos) => {
+              if (infos && selectedOrgAddress) {
+                for (const info of infos) {
+                  saveEmployeeMeta(selectedOrgAddress, info.wallet, {
+                    name: info.name,
+                    role: info.role,
+                  });
+                }
               }
               refetchEmployees();
               setShowAddEmployee(false);

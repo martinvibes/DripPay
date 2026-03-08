@@ -64,7 +64,7 @@ export function HeroSection() {
         >
           {/* Badge */}
           <motion.div variants={fadeUp} custom={0}>
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-accent)] bg-[var(--accent-muted)] px-4 py-1.5 backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-accent)] bg-[var(--accent-muted)] mt-7 px-4 py-1.5 backdrop-blur-sm">
               <motion.div
                 animate={{ opacity: [0.5, 1, 0.5] }}
                 transition={{ duration: 2, repeat: Infinity }}

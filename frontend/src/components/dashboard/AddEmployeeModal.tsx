@@ -9,6 +9,9 @@ import {
   Loader2,
   Check,
   Sparkles,
+  Plus,
+  Trash2,
+  Upload,
 } from "lucide-react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { toHex, parseUnits } from "viem";
@@ -16,9 +19,22 @@ import { Modal } from "@/components/shared/Modal";
 import { ORGANIZATION_ABI } from "@/lib/contracts";
 import { getFhevmInstance } from "@/lib/fhevm";
 
+interface EmployeeRow {
+  id: number;
+  name: string;
+  role: string;
+  wallet: string;
+  salary: string;
+}
+
+let rowIdCounter = 1;
+function createEmptyRow(): EmployeeRow {
+  return { id: rowIdCounter++, name: "", role: "", wallet: "", salary: "" };
+}
+
 interface AddEmployeeModalProps {
   onClose: () => void;
-  onAddEmployee: (info?: { wallet: string; name: string; role: string }) => void;
+  onAddEmployee: (infos?: { wallet: string; name: string; role: string }[]) => void;
   orgAddress: `0x${string}`;
   existingCount: number;
   existingAddresses?: `0x${string}`[];
@@ -37,10 +53,7 @@ export function AddEmployeeModal({
   tokenSymbol = "ETH",
   tokenDecimals = 18,
 }: AddEmployeeModalProps) {
-  const [name, setName] = useState("");
-  const [wallet, setWallet] = useState("");
-  const [role, setRole] = useState("");
-  const [salary, setSalary] = useState("");
+  const [rows, setRows] = useState<EmployeeRow[]>([createEmptyRow()]);
   const [step, setStep] = useState<Step>("form");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -49,20 +62,19 @@ export function AddEmployeeModal({
 
   const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
     hash: txHash,
-    query: {
-      enabled: !!txHash,
-    },
+    query: { enabled: !!txHash },
   });
 
   // When tx confirms, show success
   useEffect(() => {
     if (isTxConfirmed && step === "confirming") {
       setStep("success");
-      setTimeout(() => onAddEmployee({
-        wallet: wallet.trim(),
-        name: name.trim() || `${wallet.trim().slice(0, 6)}...${wallet.trim().slice(-4)}`,
-        role: role.trim() || "Employee",
-      }), 1500);
+      const infos = rows.map((r) => ({
+        wallet: r.wallet.trim(),
+        name: r.name.trim() || `${r.wallet.trim().slice(0, 6)}...${r.wallet.trim().slice(-4)}`,
+        role: r.role.trim() || "Employee",
+      }));
+      setTimeout(() => onAddEmployee(infos), 1500);
     }
   }, [isTxConfirmed, step, onAddEmployee]);
 
@@ -75,52 +87,65 @@ export function AddEmployeeModal({
     }
   }, [writeError, step, resetWrite]);
 
-  const trimmedWallet = wallet.trim().toLowerCase();
-  const isDuplicate = trimmedWallet.startsWith("0x") && existingAddresses.some(
-    (addr) => addr.toLowerCase() === trimmedWallet
-  );
-  const isValid = wallet.trim() && salary.trim() && !isDuplicate;
+  const addRow = () => setRows((prev) => [...prev, createEmptyRow()]);
+  const removeRow = (id: number) => {
+    if (rows.length <= 1) return;
+    setRows((prev) => prev.filter((r) => r.id !== id));
+  };
+  const updateRow = (id: number, field: keyof EmployeeRow, value: string) => {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+  };
+
+  // Validation helpers
+  const getDuplicate = (row: EmployeeRow) => {
+    const addr = row.wallet.trim().toLowerCase();
+    if (!addr.startsWith("0x")) return false;
+    // Check against existing on-chain employees
+    if (existingAddresses.some((a) => a.toLowerCase() === addr)) return true;
+    // Check against other rows in this batch
+    return rows.some((r) => r.id !== row.id && r.wallet.trim().toLowerCase() === addr);
+  };
+
+  const isRowValid = (row: EmployeeRow) =>
+    row.wallet.trim().length > 0 &&
+    row.salary.trim().length > 0 &&
+    !getDuplicate(row);
+
+  const allValid = rows.every(isRowValid);
 
   const handleSubmit = async () => {
-    if (!isValid || step !== "form") return;
+    if (!allValid || step !== "form") return;
 
     try {
       setStep("encrypting");
 
-      // Get fhEVM instance and encrypt salary
       const fhevmInstance = await getFhevmInstance();
-      // Convert salary to smallest unit (wei for ETH, or token decimals for ERC-20)
-      // e.g. "0.003" ETH → 3000000000000000 wei
-      const salaryInSmallestUnit = parseUnits(salary, tokenDecimals);
-      console.log("[AddEmployee] Salary input:", salary, tokenSymbol);
-      console.log("[AddEmployee] Converted to smallest unit:", salaryInSmallestUnit.toString(), `(${tokenDecimals} decimals)`);
-      console.log("[AddEmployee] Contract:", orgAddress, "Sender:", connectedAddress);
+      const input = fhevmInstance.createEncryptedInput(orgAddress, connectedAddress!);
 
-      // userAddress must be the tx sender (admin), not the employee
-      const input = fhevmInstance.createEncryptedInput(
-        orgAddress,
-        connectedAddress!
-      );
-      input.add64(salaryInSmallestUnit);
+      // Add all salaries to one encrypted input batch
+      for (const row of rows) {
+        const salaryInSmallestUnit = parseUnits(row.salary, tokenDecimals);
+        input.add64(salaryInSmallestUnit);
+      }
+
       const encrypted = await input.encrypt();
-      console.log("[AddEmployee] Encrypted handle:", toHex(encrypted.handles[0]));
-      console.log("[AddEmployee] Proof length:", encrypted.inputProof.length);
+
+      console.log(`[AddEmployees] Batch encrypting ${rows.length} employees`);
+      console.log("[AddEmployees] Handles:", encrypted.handles.length);
 
       setStep("confirming");
 
-      // Call addEmployee on the contract
+      const addresses = rows.map((r) => r.wallet.trim() as `0x${string}`);
+      const handles = encrypted.handles.map((h: Uint8Array) => toHex(h));
+
       writeContract({
         address: orgAddress,
         abi: ORGANIZATION_ABI,
-        functionName: "addEmployee",
-        args: [
-          wallet.trim() as `0x${string}`,
-          toHex(encrypted.handles[0]),
-          toHex(encrypted.inputProof),
-        ],
+        functionName: "addEmployees",
+        args: [addresses, handles, toHex(encrypted.inputProof)],
       });
     } catch (err: any) {
-      console.error("AddEmployee error:", err);
+      console.error("AddEmployees error:", err);
       setErrorMsg(err?.shortMessage || err?.message || "Transaction failed");
       setStep("error");
     }
@@ -146,10 +171,10 @@ export function AddEmployeeModal({
       onClose={onClose}
       title={
         step === "success"
-          ? "Employee Added"
+          ? `${rows.length > 1 ? "Employees" : "Employee"} Added`
           : step === "error"
             ? "Error"
-            : "Add Employee"
+            : "Add Employees"
       }
       icon={modalIcon}
     >
@@ -180,7 +205,7 @@ export function AddEmployeeModal({
                 className="font-semibold"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                Employee added successfully
+                {rows.length} {rows.length > 1 ? "employees" : "employee"} added successfully
               </p>
             </motion.div>
             <motion.p
@@ -189,7 +214,7 @@ export function AddEmployeeModal({
               transition={{ delay: 0.3 }}
               className="mt-2 text-xs text-[var(--text-muted)]"
             >
-              Salary encrypted and stored onchain
+              All salaries encrypted and stored onchain in one transaction
             </motion.p>
           </motion.div>
         ) : step === "error" ? (
@@ -217,135 +242,181 @@ export function AddEmployeeModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[var(--text-secondary)]">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Alice Johnson"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="input-field"
-                    disabled={step !== "form"}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[var(--text-secondary)]">
-                    Role
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Engineer"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="input-field"
-                    disabled={step !== "form"}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[var(--text-secondary)]">
-                  Wallet Address
-                </label>
-                <input
-                  type="text"
-                  placeholder="0x..."
-                  value={wallet}
-                  onChange={(e) => setWallet(e.target.value)}
-                  className={`input-field font-mono text-sm ${isDuplicate ? "!border-red-500/50" : ""}`}
-                  disabled={step !== "form"}
-                />
-                {isDuplicate && (
-                  <p className="mt-1.5 text-[11px] text-red-400">
-                    This address is already an employee
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[var(--text-secondary)]">
-                  Monthly Salary
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    placeholder="5000"
-                    value={salary}
-                    onChange={(e) => setSalary(e.target.value)}
-                    className="input-field !pr-20"
-                    disabled={step !== "form"}
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-[var(--text-muted)]">
-                    <Lock className="h-3 w-3" />
-                    <span>{tokenSymbol}</span>
-                  </div>
-                </div>
-                <p className="mt-1.5 text-[11px] text-[var(--text-muted)]">
-                  Encrypted with FHE before being stored onchain
-                </p>
-              </div>
-
-              {/* Progress indicator */}
-              <AnimatePresence>
-                {(step === "encrypting" || step === "confirming") && (
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+              {rows.map((row, idx) => {
+                const isDup = getDuplicate(row);
+                return (
                   <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden"
+                    key={row.id}
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="rounded-xl border border-[var(--border)] bg-[rgba(255,255,255,0.02)] p-4 space-y-3"
                   >
-                    <div className="rounded-xl bg-[rgba(0,229,160,0.04)] border border-[var(--border-accent)] p-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2.5">
-                          {step === "confirming" ? (
-                            <Check className="h-3.5 w-3.5 text-[var(--accent)]" />
-                          ) : (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
-                          )}
-                          <span className="text-xs text-[var(--text-secondary)]">
-                            Encrypting salary with FHE...
-                          </span>
+                    {/* Row header */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-[var(--text-muted)]">
+                        Employee {idx + 1}
+                      </span>
+                      {rows.length > 1 && (
+                        <button
+                          onClick={() => removeRow(row.id)}
+                          className="text-[var(--text-muted)] hover:text-red-400 transition-colors"
+                          disabled={step !== "form"}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Name + Role */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 block text-[11px] font-semibold text-[var(--text-secondary)]">
+                          Name
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Alice Johnson"
+                          value={row.name}
+                          onChange={(e) => updateRow(row.id, "name", e.target.value)}
+                          className="input-field !text-sm"
+                          disabled={step !== "form"}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[11px] font-semibold text-[var(--text-secondary)]">
+                          Role
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Engineer"
+                          value={row.role}
+                          onChange={(e) => updateRow(row.id, "role", e.target.value)}
+                          className="input-field !text-sm"
+                          disabled={step !== "form"}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Wallet */}
+                    <div>
+                      <label className="mb-1 block text-[11px] font-semibold text-[var(--text-secondary)]">
+                        Wallet Address
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="0x..."
+                        value={row.wallet}
+                        onChange={(e) => updateRow(row.id, "wallet", e.target.value)}
+                        className={`input-field font-mono !text-sm ${isDup ? "!border-red-500/50" : ""}`}
+                        disabled={step !== "form"}
+                      />
+                      {isDup && (
+                        <p className="mt-1 text-[11px] text-red-400">
+                          Duplicate address
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Salary */}
+                    <div>
+                      <label className="mb-1 block text-[11px] font-semibold text-[var(--text-secondary)]">
+                        Monthly Salary
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          placeholder="5000"
+                          value={row.salary}
+                          onChange={(e) => updateRow(row.id, "salary", e.target.value)}
+                          className="input-field !pr-20 !text-sm"
+                          disabled={step !== "form"}
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-[var(--text-muted)]">
+                          <Lock className="h-3 w-3" />
+                          <span>{tokenSymbol}</span>
                         </div>
-                        {step === "confirming" && (
-                          <motion.div
-                            initial={{ opacity: 0, x: -8 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="flex items-center gap-2.5"
-                          >
-                            <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
-                            <span className="text-xs text-[var(--text-secondary)]">
-                              Confirm transaction in wallet...
-                            </span>
-                          </motion.div>
-                        )}
                       </div>
                     </div>
                   </motion.div>
-                )}
-              </AnimatePresence>
-
-              <button
-                onClick={handleSubmit}
-                disabled={!isValid || step !== "form"}
-                className="btn-primary w-full !py-3 mt-1 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {step !== "form" ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="h-4 w-4" />
-                    Encrypt & Add Employee
-                  </>
-                )}
-              </button>
+                );
+              })}
             </div>
+
+            {/* Add another employee button */}
+            {step === "form" && (
+              <button
+                onClick={addRow}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--border)] py-2.5 text-xs text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Another Employee
+              </button>
+            )}
+
+            <p className="mt-3 text-[11px] text-[var(--text-muted)] text-center">
+              {rows.length > 1
+                ? `All ${rows.length} salaries will be encrypted with FHE in one transaction`
+                : "Salary encrypted with FHE before being stored onchain"}
+            </p>
+
+            {/* Progress indicator */}
+            <AnimatePresence>
+              {(step === "encrypting" || step === "confirming") && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden mt-3"
+                >
+                  <div className="rounded-xl bg-[rgba(0,229,160,0.04)] border border-[var(--border-accent)] p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2.5">
+                        {step === "confirming" ? (
+                          <Check className="h-3.5 w-3.5 text-[var(--accent)]" />
+                        ) : (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
+                        )}
+                        <span className="text-xs text-[var(--text-secondary)]">
+                          Encrypting {rows.length} {rows.length > 1 ? "salaries" : "salary"} with FHE...
+                        </span>
+                      </div>
+                      {step === "confirming" && (
+                        <motion.div
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="flex items-center gap-2.5"
+                        >
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
+                          <span className="text-xs text-[var(--text-secondary)]">
+                            Confirm transaction in wallet...
+                          </span>
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <button
+              onClick={handleSubmit}
+              disabled={!allValid || step !== "form"}
+              className="btn-primary w-full !py-3 mt-3 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {step !== "form" ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Shield className="h-4 w-4" />
+                  Encrypt & Add {rows.length > 1 ? `${rows.length} Employees` : "Employee"}
+                </>
+              )}
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
