@@ -200,16 +200,7 @@ export default function EmployeePage() {
       }
 
       // Pass handle directly as hex string (matching Zama's official pattern)
-      let result = await attemptDecrypt(handle);
-
-      // If result is 0, the FHE coprocessor computation may not have settled yet.
-      // Retry once after a short delay.
-      if (result === BigInt(0)) {
-        console.log("[Decrypt] Got 0 — retrying in 5s (FHE coprocessor may still be computing)...");
-        setDecryptError("FHE computation may still be processing. Retrying...");
-        await new Promise(r => setTimeout(r, 5000));
-        result = await attemptDecrypt(handle);
-      }
+      const result = await attemptDecrypt(handle);
 
       // Convert from smallest unit (wei) back to human-readable
       const raw = typeof result === "bigint" ? result : BigInt(String(result));
