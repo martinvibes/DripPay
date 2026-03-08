@@ -11,7 +11,7 @@ const PRIVACY_ITEMS = [
   },
   {
     icon: Eye,
-    text: "No one — not your employer, validators, or DripPay — can see your balance.",
+    text: "No onenot your employer, validators, or DripPay can see your balance.",
   },
 ];
 

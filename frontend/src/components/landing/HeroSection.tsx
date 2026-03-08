@@ -163,7 +163,7 @@ function HeroPayslip() {
                 className="text-sm font-semibold"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                Acme Corp — March Payroll
+                Acme Corp March Payroll
               </p>
               <p className="text-[11px] text-[var(--text-muted)]">
                 Block #18,294,021

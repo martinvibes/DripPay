@@ -9,7 +9,7 @@ const SECURITY_POINTS = [
   "Salaries encrypted with TFHE before reaching the chain",
   "Computations performed entirely on ciphertext",
   "Only the employee's wallet can decrypt their balance",
-  "Zero plaintext exposure — ever",
+  "Zero plaintext exposure ever",
 ];
 
 export function SecuritySection() {
