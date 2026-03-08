@@ -56,13 +56,13 @@ export function useContractEvents({
 
     let cancelled = false;
 
-    // Fetch recent events (single RPC call — last ~200 blocks)
+    // Fetch recent events (single RPC call — last ~10000 blocks, ~33 hours on Sepolia)
     publicClient.getBlockNumber().then(async (currentBlock) => {
       if (cancelled) return;
       startBlockRef.current = currentBlock;
       setIsLoading(true);
       try {
-        const fromBlock = currentBlock > BigInt(200) ? currentBlock - BigInt(200) : BigInt(0);
+        const fromBlock = currentBlock > BigInt(10000) ? currentBlock - BigInt(10000) : BigInt(0);
         const logs = await publicClient.getContractEvents({
           address, abi, eventName, args, fromBlock,
         });
