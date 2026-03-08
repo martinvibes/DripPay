@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield,
@@ -12,6 +12,10 @@ import {
   Plus,
   Trash2,
   Upload,
+  FileSpreadsheet,
+  Download,
+  AlertCircle,
+  X,
 } from "lucide-react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { toHex, parseUnits } from "viem";
@@ -31,6 +35,91 @@ let rowIdCounter = 1;
 function createEmptyRow(): EmployeeRow {
   return { id: rowIdCounter++, name: "", role: "", wallet: "", salary: "" };
 }
+
+// ── CSV Parsing ─────────────────────────────────────────────────────────
+function parseCSV(text: string): { rows: Omit<EmployeeRow, "id">[]; errors: string[] } {
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) return { rows: [], errors: ["File is empty"] };
+
+  // Detect header — check if first line contains "name" or "wallet"
+  const firstLine = lines[0].toLowerCase();
+  const hasHeader =
+    firstLine.includes("name") ||
+    firstLine.includes("wallet") ||
+    firstLine.includes("address") ||
+    firstLine.includes("salary");
+
+  const dataLines = hasHeader ? lines.slice(1) : lines;
+  const parsed: Omit<EmployeeRow, "id">[] = [];
+  const errors: string[] = [];
+
+  for (let i = 0; i < dataLines.length; i++) {
+    const lineNum = hasHeader ? i + 2 : i + 1;
+    // Handle quoted fields with commas inside them
+    const cols = dataLines[i].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+    if (!cols || cols.length < 2) {
+      errors.push(`Line ${lineNum}: not enough columns`);
+      continue;
+    }
+
+    const clean = cols.map((c) => c.trim().replace(/^"|"$/g, "").trim());
+
+    // Support both 4-col (name,role,wallet,salary) and 2-col (wallet,salary)
+    let name = "";
+    let role = "";
+    let wallet = "";
+    let salary = "";
+
+    if (cols.length >= 4) {
+      [name, role, wallet, salary] = clean;
+    } else if (cols.length === 3) {
+      // Could be name,wallet,salary or role,wallet,salary — treat first as name
+      [name, wallet, salary] = clean;
+    } else {
+      [wallet, salary] = clean;
+    }
+
+    // Validate wallet looks like an address
+    if (!wallet.startsWith("0x") || wallet.length < 10) {
+      errors.push(`Line ${lineNum}: invalid wallet address "${wallet.slice(0, 20)}..."`);
+      continue;
+    }
+
+    // Validate salary is a number
+    if (isNaN(Number(salary)) || Number(salary) <= 0) {
+      errors.push(`Line ${lineNum}: invalid salary "${salary}"`);
+      continue;
+    }
+
+    parsed.push({ name, role, wallet, salary });
+  }
+
+  return { rows: parsed, errors };
+}
+
+function generateCSVTemplate(): string {
+  return [
+    "name,role,wallet,salary",
+    "Alice Johnson,Engineer,0x1234567890abcdef1234567890abcdef12345678,5000",
+    "Bob Smith,Designer,0xabcdef1234567890abcdef1234567890abcdef12,4500",
+  ].join("\n");
+}
+
+function downloadTemplate() {
+  const blob = new Blob([generateCSVTemplate()], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "employees_template.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Component ───────────────────────────────────────────────────────────
 
 interface AddEmployeeModalProps {
   onClose: () => void;
@@ -56,6 +145,10 @@ export function AddEmployeeModal({
   const [rows, setRows] = useState<EmployeeRow[]>([createEmptyRow()]);
   const [step, setStep] = useState<Step>("form");
   const [errorMsg, setErrorMsg] = useState("");
+  const [csvImported, setCsvImported] = useState(false);
+  const [csvErrors, setCsvErrors] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { address: connectedAddress } = useAccount();
   const { writeContract, data: txHash, isPending, error: writeError, reset: resetWrite } = useWriteContract();
@@ -96,13 +189,63 @@ export function AddEmployeeModal({
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
   };
 
+  // ── CSV Import ──────────────────────────────────────────────────────
+  const handleCSVFile = useCallback((file: File) => {
+    if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
+      setCsvErrors(["Please upload a .csv file"]);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const { rows: parsed, errors } = parseCSV(text);
+
+      if (parsed.length === 0) {
+        setCsvErrors(errors.length > 0 ? errors : ["No valid employee rows found"]);
+        return;
+      }
+
+      const newRows: EmployeeRow[] = parsed.map((p) => ({
+        id: rowIdCounter++,
+        ...p,
+      }));
+
+      setRows(newRows);
+      setCsvImported(true);
+      setCsvErrors(errors); // show partial errors if any
+    };
+    reader.readAsText(file);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const file = e.dataTransfer.files[0];
+      if (file) handleCSVFile(file);
+    },
+    [handleCSVFile]
+  );
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleCSVFile(file);
+    // Reset so same file can be re-selected
+    e.target.value = "";
+  };
+
+  const clearCSVImport = () => {
+    setRows([createEmptyRow()]);
+    setCsvImported(false);
+    setCsvErrors([]);
+  };
+
   // Validation helpers
   const getDuplicate = (row: EmployeeRow) => {
     const addr = row.wallet.trim().toLowerCase();
     if (!addr.startsWith("0x")) return false;
-    // Check against existing on-chain employees
     if (existingAddresses.some((a) => a.toLowerCase() === addr)) return true;
-    // Check against other rows in this batch
     return rows.some((r) => r.id !== row.id && r.wallet.trim().toLowerCase() === addr);
   };
 
@@ -122,7 +265,6 @@ export function AddEmployeeModal({
       const fhevmInstance = await getFhevmInstance();
       const input = fhevmInstance.createEncryptedInput(orgAddress, connectedAddress!);
 
-      // Add all salaries to one encrypted input batch
       for (const row of rows) {
         const salaryInSmallestUnit = parseUnits(row.salary, tokenDecimals);
         input.add64(salaryInSmallestUnit);
@@ -165,6 +307,9 @@ export function AddEmployeeModal({
       )}
     </div>
   );
+
+  // Check if only the default empty row exists (show CSV zone)
+  const showCSVZone = step === "form" && !csvImported && rows.length === 1 && !rows[0].wallet && !rows[0].salary;
 
   return (
     <Modal
@@ -242,7 +387,169 @@ export function AddEmployeeModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+            {/* ── CSV Import Zone ─────────────────────────────────── */}
+            <AnimatePresence mode="wait">
+              {showCSVZone && (
+                <motion.div
+                  key="csv-zone"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="mb-4"
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    onChange={handleFileInput}
+                    className="hidden"
+                  />
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`
+                      group relative cursor-pointer rounded-xl border-2 border-dashed p-5
+                      transition-all duration-300 overflow-hidden
+                      ${isDragging
+                        ? "border-[var(--accent)] bg-[rgba(0,229,160,0.06)]"
+                        : "border-[var(--border)] hover:border-[rgba(0,229,160,0.3)] bg-[rgba(255,255,255,0.01)] hover:bg-[rgba(0,229,160,0.02)]"
+                      }
+                    `}
+                  >
+                    {/* Subtle animated background shimmer on hover */}
+                    <div
+                      className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      style={{
+                        background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(0,229,160,0.04) 0%, transparent 70%)",
+                      }}
+                    />
+
+                    <div className="relative flex flex-col items-center gap-3">
+                      <motion.div
+                        animate={isDragging ? { scale: 1.1, y: -2 } : { scale: 1, y: 0 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                        className={`
+                          flex h-10 w-10 items-center justify-center rounded-xl
+                          transition-colors duration-300
+                          ${isDragging
+                            ? "bg-[rgba(0,229,160,0.15)]"
+                            : "bg-[rgba(255,255,255,0.04)] group-hover:bg-[rgba(0,229,160,0.08)]"
+                          }
+                        `}
+                      >
+                        <FileSpreadsheet className={`h-5 w-5 transition-colors duration-300 ${isDragging ? "text-[var(--accent)]" : "text-[var(--text-muted)] group-hover:text-[var(--accent)]"}`} />
+                      </motion.div>
+
+                      <div className="text-center">
+                        <p className="text-xs font-medium text-[var(--text-secondary)]">
+                          {isDragging ? (
+                            <span className="text-[var(--accent)]">Drop CSV file here</span>
+                          ) : (
+                            <>
+                              <span className="text-[var(--accent)]">Upload CSV</span>
+                              {" "}or drag and drop
+                            </>
+                          )}
+                        </p>
+                        <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                          Format: name, role, wallet, salary
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadTemplate();
+                        }}
+                        className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                      >
+                        <Download className="h-3 w-3" />
+                        Download template
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="relative my-4 flex items-center">
+                    <div className="flex-1 border-t border-[var(--border)]" />
+                    <span className="px-3 text-[11px] text-[var(--text-muted)]">or add manually</span>
+                    <div className="flex-1 border-t border-[var(--border)]" />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* ── CSV Import Feedback ─────────────────────────────── */}
+            <AnimatePresence>
+              {csvImported && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-3"
+                >
+                  <div className="flex items-center justify-between rounded-lg bg-[rgba(0,229,160,0.06)] border border-[var(--border-accent)] px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="h-3.5 w-3.5 text-[var(--accent)]" />
+                      <span className="text-xs text-[var(--accent)] font-medium">
+                        {rows.length} {rows.length === 1 ? "employee" : "employees"} imported from CSV
+                      </span>
+                    </div>
+                    <button
+                      onClick={clearCSVImport}
+                      className="text-[var(--text-muted)] hover:text-red-400 transition-colors p-0.5"
+                      title="Clear import"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* CSV parse warnings */}
+            <AnimatePresence>
+              {csvErrors.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-3"
+                >
+                  <div className="rounded-lg bg-[rgba(239,68,68,0.06)] border border-red-500/20 px-3 py-2 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="h-3.5 w-3.5 text-red-400" />
+                        <span className="text-xs text-red-400 font-medium">
+                          {csvImported ? "Some rows skipped" : "Import failed"}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setCsvErrors([])}
+                        className="text-[var(--text-muted)] hover:text-red-400 transition-colors p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                    {csvErrors.slice(0, 3).map((err, i) => (
+                      <p key={i} className="text-[11px] text-red-400/70 pl-5.5">{err}</p>
+                    ))}
+                    {csvErrors.length > 3 && (
+                      <p className="text-[11px] text-red-400/50 pl-5.5">
+                        +{csvErrors.length - 3} more errors
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* ── Employee Rows ────────────────────────────────────── */}
+            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
               {rows.map((row, idx) => {
                 const isDup = getDuplicate(row);
                 return (
@@ -251,6 +558,7 @@ export function AddEmployeeModal({
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
+                    transition={{ delay: csvImported ? idx * 0.03 : 0 }}
                     className="rounded-xl border border-[var(--border)] bg-[rgba(255,255,255,0.02)] p-4 space-y-3"
                   >
                     {/* Row header */}
@@ -344,15 +652,26 @@ export function AddEmployeeModal({
               })}
             </div>
 
-            {/* Add another employee button */}
+            {/* Add another + CSV re-import buttons */}
             {step === "form" && (
-              <button
-                onClick={addRow}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--border)] py-2.5 text-xs text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add Another Employee
-              </button>
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={addRow}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--border)] py-2.5 text-xs text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add Employee
+                </button>
+                {!showCSVZone && (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--border)] px-4 py-2.5 text-xs text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    CSV
+                  </button>
+                )}
+              </div>
             )}
 
             <p className="mt-3 text-[11px] text-[var(--text-muted)] text-center">
@@ -420,6 +739,15 @@ export function AddEmployeeModal({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Hidden file input for CSV re-import after initial zone disappears */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        onChange={handleFileInput}
+        className="hidden"
+      />
     </Modal>
   );
 }
