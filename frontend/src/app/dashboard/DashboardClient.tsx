@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Shield, Copy, Check } from "lucide-react";
 import { useAccount, useReadContracts, useWaitForTransactionReceipt } from "wagmi";
@@ -91,7 +91,7 @@ export default function DashboardPage() {
   const displayDecimals = isETH ? 18 : tokenDecimals ?? 18;
 
   // Batch-fetch real names for all org addresses
-  const { data: orgNameResults } = useReadContracts({
+  const { data: orgNameResults, refetch: refetchOrgNames } = useReadContracts({
     contracts: (orgAddresses ?? []).map((addr) => ({
       address: addr,
       abi: ORGANIZATION_ABI,
@@ -101,7 +101,7 @@ export default function DashboardPage() {
   });
 
   // Batch-fetch createdAt for all org addresses
-  const { data: orgCreatedAtResults } = useReadContracts({
+  const { data: orgCreatedAtResults, refetch: refetchOrgCreatedAt } = useReadContracts({
     contracts: (orgAddresses ?? []).map((addr) => ({
       address: addr,
       abi: ORGANIZATION_ABI,
@@ -111,7 +111,7 @@ export default function DashboardPage() {
   });
 
   // Batch-fetch employee lists for all org addresses
-  const { data: orgEmployeeResults } = useReadContracts({
+  const { data: orgEmployeeResults, refetch: refetchOrgEmployees } = useReadContracts({
     contracts: (orgAddresses ?? []).map((addr) => ({
       address: addr,
       abi: ORGANIZATION_ABI,
@@ -167,6 +167,20 @@ export default function DashboardPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCreateConfirmed, createTxHash]);
+
+  // When orgAddresses changes (new org created), refetch all metadata
+  const prevOrgCountRef = useRef(orgAddresses?.length ?? 0);
+  useEffect(() => {
+    const currentCount = orgAddresses?.length ?? 0;
+    if (currentCount > prevOrgCountRef.current) {
+      // New org was added — refetch metadata queries
+      refetchOrgNames();
+      refetchOrgCreatedAt();
+      refetchOrgEmployees();
+    }
+    prevOrgCountRef.current = currentCount;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgAddresses]);
 
   const handleSelectOrg = (org: Organization) => {
     const addr = (org as any).fullAddress || org.id;
@@ -277,6 +291,7 @@ export default function DashboardPage() {
 
         {view === "org-list" && (
           <OrgSelector
+            key={`orgs-${orgs.length}-${orgs.map((o) => o.name).join(",")}`}
             title="Your Organizations"
             subtitle={
               isLoadingOrgs
