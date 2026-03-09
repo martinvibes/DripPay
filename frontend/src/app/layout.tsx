@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   title: "DripPay — Private Payroll, Onchain",
   description:
     "End-to-end encrypted payroll powered by Fully Homomorphic Encryption. Nobody sees what you earn — not even the blockchain.",
-  icons: { icon: "/favicon.ico" },
+  icons: { icon: "/icon.svg" },
 };
 
 export default function RootLayout({
