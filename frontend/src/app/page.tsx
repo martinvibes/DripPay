@@ -6,6 +6,7 @@ import { HowItWorks } from "@/components/landing/HowItWorks";
 import { SecuritySection } from "@/components/landing/SecuritySection";
 import { CTASection } from "@/components/landing/CTASection";
 import { Footer } from "@/components/landing/Footer";
+import { ChatWidget } from "@/components/landing/ChatWidget";
 
 export default function LandingPage() {
   return (
@@ -18,6 +19,7 @@ export default function LandingPage() {
       <SecuritySection />
       <CTASection />
       <Footer />
+      <ChatWidget />
     </div>
   );
 }
