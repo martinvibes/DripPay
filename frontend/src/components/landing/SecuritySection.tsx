@@ -1,9 +1,10 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Shield, Lock, Zap, EyeOff, Sparkles } from "lucide-react";
 import { fadeUp, stagger } from "@/lib/animations";
 import { Star4, CrossMark, Dot } from "@/components/shared/Stars";
+import { useState, useEffect } from "react";
 
 const SECURITY_POINTS = [
   "Salaries encrypted with TFHE before reaching the chain",
@@ -14,16 +15,46 @@ const SECURITY_POINTS = [
 
 export function SecuritySection() {
   return (
-    <section id="security" className="section-padding relative">
+    <section id="security" className="section-padding relative overflow-hidden">
       {/* Decorative elements */}
-      <Star4 className="top-[12%] right-[10%]" size={16} opacity={0.1} pulse delay={0.8} />
-      <Star4 className="bottom-[18%] left-[5%]" size={14} opacity={0.12} rotate delay={1.5} />
-      <CrossMark className="top-[8%] left-[15%]" size={10} opacity={0.08} rotate delay={0.3} />
-      <Dot className="top-[25%] right-[20%]" size={3} opacity={0.15} pulse delay={1} />
-      <Dot className="bottom-[15%] right-[8%]" size={4} opacity={0.12} pulse delay={2} />
+      <Star4
+        className="top-[12%] right-[10%]"
+        size={16}
+        opacity={0.1}
+        pulse
+        delay={0.8}
+      />
+      <Star4
+        className="bottom-[18%] left-[5%]"
+        size={14}
+        opacity={0.12}
+        rotate
+        delay={1.5}
+      />
+      <CrossMark
+        className="top-[8%] left-[15%]"
+        size={10}
+        opacity={0.08}
+        rotate
+        delay={0.3}
+      />
+      <Dot
+        className="top-[25%] right-[20%]"
+        size={3}
+        opacity={0.15}
+        pulse
+        delay={1}
+      />
+      <Dot
+        className="bottom-[15%] right-[8%]"
+        size={4}
+        opacity={0.12}
+        pulse
+        delay={2}
+      />
 
       <div className="mx-auto max-w-[var(--max-width)] px-6">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
+        <div className="grid items-center gap-16 lg:grid-cols-2 lg:gap-24">
           {/* Left — Text */}
           <motion.div
             initial="hidden"
@@ -36,7 +67,7 @@ export function SecuritySection() {
               custom={0}
               className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]"
             >
-              Security
+              Advanced Privacy
             </motion.p>
             <motion.h2
               variants={fadeUp}
@@ -44,26 +75,28 @@ export function SecuritySection() {
               className="mb-5 text-3xl font-bold tracking-tight sm:text-4xl"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              Encrypted at
+              Your Numbers,
               <br />
-              Every Layer
+              <span className="text-secondary">Nobody Else&apos;s Eyes.</span>
             </motion.h2>
             <motion.p
               variants={fadeUp}
               custom={2}
               className="mb-8 max-w-md text-sm leading-relaxed text-[var(--text-secondary)]"
             >
-              DripPay uses Zama&apos;s Fully Homomorphic Encryption to perform
-              computations on encrypted data. Salaries are never exposed — not
-              to validators, not to other employees, not to anyone except the
-              intended recipient.
+              We&apos;ve built a &quot;Black Box&quot; for your payroll. Using
+              Zama&apos;s Fully Homomorphic Encryption, we process payments
+              while the amounts stay hidden from the entire world — even from
+              the blockchain itself.
             </motion.p>
 
-            <motion.div variants={fadeUp} custom={3} className="space-y-3">
+            <motion.div variants={fadeUp} custom={3} className="space-y-4">
               {SECURITY_POINTS.map((point) => (
-                <div key={point} className="flex items-start gap-2.5">
-                  <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
-                  <span className="text-sm text-[var(--text-secondary)]">
+                <div key={point} className="flex items-start gap-3">
+                  <div className="mt-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent-muted">
+                    <Shield className="h-3 w-3 text-accent" />
+                  </div>
+                  <span className="text-sm font-medium text-[var(--text-secondary)]">
                     {point}
                   </span>
                 </div>
@@ -71,85 +104,201 @@ export function SecuritySection() {
             </motion.div>
           </motion.div>
 
-          {/* Right — Code snippet */}
-          <CodeSnippet />
+          {/* Right — Privacy Visualization */}
+          <PrivacyVisualization />
         </div>
       </div>
     </section>
   );
 }
 
-function CodeSnippet() {
+function PrivacyVisualization() {
+  const [stage, setStage] = useState(0); // 0: plaintext, 1: encrypting, 2: processing, 3: result
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setStage((prev) => (prev + 1) % 4);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <motion.div
-      initial={{ opacity: 0, x: 30 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] as const }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true, margin: "-100px" }}
+      className="relative aspect-square w-full max-w-md lg:ml-auto"
     >
-      <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-primary)]">
-        {/* Tab bar */}
-        <div className="flex items-center gap-2 border-b border-[var(--border)] px-4 py-3">
-          <div className="flex gap-1.5">
-            <div className="h-2.5 w-2.5 rounded-full bg-[var(--text-muted)]" />
-            <div className="h-2.5 w-2.5 rounded-full bg-[var(--text-muted)]" />
-            <div className="h-2.5 w-2.5 rounded-full bg-[var(--text-muted)]" />
+      {/* Background Glows */}
+      <div className="absolute inset-0 bg-accent/5 blur-[100px] rounded-full" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-full w-full bg-secondary/5 blur-[120px] rounded-full" />
+
+      {/* Main Container */}
+      <div className="relative h-full w-full rounded-3xl border border-border bg-card/40 backdrop-blur-2xl shadow-2xl overflow-hidden flex flex-col items-center justify-center p-8">
+        {/* The Shield Icon Centerpiece */}
+        <div className="relative z-10 mb-8 mt-4">
+          <motion.div
+            animate={
+              stage === 2
+                ? {
+                    scale: [1, 1.05, 1],
+                    rotate: [0, 5, -5, 0],
+                  }
+                : { scale: 1, rotate: 0 }
+            }
+            transition={{ duration: 1, repeat: stage === 2 ? Infinity : 0 }}
+            className="relative flex h-32 w-32 items-center justify-center rounded-3xl bg-accent-muted border border-accent/20 shadow-[0_0_30px_rgba(0,229,160,0.1)]"
+          >
+            {/* Spinning ring inside when processing */}
+            {stage === 2 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, rotate: 360 }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-2 rounded-full border-2 border-dashed border-accent opacity-30"
+              />
+            )}
+
+            <AnimatePresence mode="wait">
+              {stage === 0 && (
+                <motion.div
+                  key="unlocked"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.5 }}
+                >
+                  <Lock className="h-12 w-12 text-accent opacity-40" />
+                </motion.div>
+              )}
+              {(stage === 1 || stage === 2) && (
+                <motion.div
+                  key="locked"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.5 }}
+                >
+                  <Shield className="h-14 w-14 text-accent" strokeWidth={1.5} />
+                </motion.div>
+              )}
+              {stage === 3 && (
+                <motion.div
+                  key="sparkle"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.5 }}
+                >
+                  <Sparkles className="h-12 w-12 text-accent" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
+          {/* Radar Waves */}
+          <div className="absolute inset-0 -z-10 flex items-center justify-center">
+            <motion.div
+              animate={{ scale: [1, 1.8], opacity: [0.3, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="h-32 w-32 rounded-full border border-accent/30"
+            />
           </div>
-          <span className="ml-3 text-xs text-[var(--text-muted)] font-mono">
-            Organization.sol
-          </span>
         </div>
-        {/* Code */}
-        <div className="p-5 font-mono text-[13px] leading-relaxed">
-          <CodeLine delay={0} dimmed>{`// Salary is NEVER stored in plaintext`}</CodeLine>
-          <CodeLine delay={0.05}><Kw>function</Kw> <Fn>setSalary</Fn>(</CodeLine>
-          <CodeLine delay={0.1}>{"  "}address <Var>employee</Var>,</CodeLine>
-          <CodeLine delay={0.15}>{"  "}einput <Var>encryptedAmount</Var>,</CodeLine>
-          <CodeLine delay={0.2}>{"  "}bytes <Kw>calldata</Kw> <Var>proof</Var></CodeLine>
-          <CodeLine delay={0.25}>) <Kw>external</Kw> onlyAdmin {"{"}</CodeLine>
-          <CodeLine delay={0.3}>{"  "}euint64 salary = <Fn>TFHE.asEuint64</Fn>(</CodeLine>
-          <CodeLine delay={0.35}>{"    "}<Var>encryptedAmount</Var>, <Var>proof</Var></CodeLine>
-          <CodeLine delay={0.4}>{"  "});</CodeLine>
-          <CodeLine delay={0.45}>{"  "}salaries[<Var>employee</Var>] = salary;</CodeLine>
-          <CodeLine delay={0.5} dimmed>{"  "}// Grant view access to employee only</CodeLine>
-          <CodeLine delay={0.55}>{"  "}<Fn>TFHE.allow</Fn>(salary, <Var>employee</Var>);</CodeLine>
-          <CodeLine delay={0.6}>{"}"}</CodeLine>
+
+        {/* Textual Feedback */}
+        <div className="text-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={stage}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.4 }}
+            >
+              <h4 className="text-lg font-bold mb-1">
+                {stage === 0 && "Plaintext Input"}
+                {stage === 1 && "Encrypting Data"}
+                {stage === 2 && "Secured Calculation"}
+                {stage === 3 && "Protected Outcome"}
+              </h4>
+              <p className="max-w-60 mx-auto text-sm italic text-text-muted">
+                {stage === 0 && "Salary data ready for processing."}
+                {stage === 1 && "Wrapping data in a privacy shell."}
+                {stage === 2 && "Computing math on ciphertexts."}
+                {stage === 3 && "Credits distributed privately."}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Floating Data Icons */}
+        <div className="absolute inset-0 pointer-events-none">
+          <FloatingNode
+            delay={0}
+            x="15%"
+            y="20%"
+            icon={<Zap className="h-4 w-4" />}
+            color="text-yellow-400"
+          />
+          <FloatingNode
+            delay={1}
+            x="85%"
+            y="30%"
+            icon={<Lock className="h-4 w-4" />}
+            color="text-accent"
+          />
+          <FloatingNode
+            delay={2}
+            x="20%"
+            y="75%"
+            icon={<EyeOff className="h-4 w-4" />}
+            color="text-secondary"
+          />
+          <FloatingNode
+            delay={3}
+            x="80%"
+            y="80%"
+            icon={<Shield className="h-3 w-3" />}
+            color="text-accent"
+          />
         </div>
       </div>
+
+      {/* External floating elements */}
+      <div className="absolute -top-4 -right-4 h-20 w-20 rounded-2xl bg-accent opacity-[0.03] blur-xl" />
+      <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-secondary opacity-[0.04] blur-2xl" />
     </motion.div>
   );
 }
 
-function CodeLine({
-  children,
-  delay = 0,
-  dimmed = false,
+function FloatingNode({
+  x,
+  y,
+  delay,
+  icon,
+  color,
 }: {
-  children: React.ReactNode;
-  delay?: number;
-  dimmed?: boolean;
+  x: string;
+  y: string;
+  delay: number;
+  icon: React.ReactNode;
+  color: string;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: -6 }}
-      whileInView={{ opacity: dimmed ? 0.3 : 1, x: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay, duration: 0.3 }}
-      className={dimmed ? "text-[var(--text-muted)]" : "text-[var(--text-secondary)]"}
+      initial={{ x, y, rotate: 0, opacity: 0 }}
+      animate={{
+        y: [y, `calc(${y} - 20px)`, y],
+        rotate: [0, 15, -15, 0],
+        opacity: [0, 0.4, 0.4, 0],
+      }}
+      transition={{
+        duration: 6,
+        repeat: Infinity,
+        delay,
+        ease: "easeInOut",
+      }}
+      className={`absolute flex h-8 w-8 items-center justify-center rounded-lg border border-border/50 bg-card/60 backdrop-blur-md ${color} shadow-lg`}
     >
-      {children}
+      {icon}
     </motion.div>
   );
-}
-
-function Kw({ children }: { children: React.ReactNode }) {
-  return <span className="text-[#a1a1aa]">{children}</span>;
-}
-
-function Fn({ children }: { children: React.ReactNode }) {
-  return <span className="text-[var(--accent)]">{children}</span>;
-}
-
-function Var({ children }: { children: React.ReactNode }) {
-  return <span className="text-[#e4e4e7]">{children}</span>;
 }

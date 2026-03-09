@@ -26,7 +26,7 @@ export const features: Feature[] = [
     icon: Eye,
     title: "Employee Self-Service",
     description:
-      "Employees connect their wallet to decrypt and view only their own balance. No one else can see it — ever.",
+      "Employees connect their wallet to decrypt and view only their own balance. No one else can see it ever.",
   },
 ];
 
@@ -49,7 +49,7 @@ export const steps: Step[] = [
     num: "02",
     title: "Add Employees",
     description:
-      "Enter wallet addresses. Set salaries — encrypted before they hit the chain.",
+      "Enter wallet addresses. Set salaries encrypted before they hit the chain.",
     icon: Wallet,
   },
   {
@@ -63,7 +63,7 @@ export const steps: Step[] = [
     num: "04",
     title: "Claim & Decrypt",
     description:
-      "Employees view their own balance — decrypted client-side with their wallet keys.",
+      "Employees view their own balance decrypted client-side with their wallet keys.",
     icon: Lock,
   },
 ];
