@@ -22,7 +22,7 @@ export function AppNav({ label, altLink }: AppNavProps) {
         <div className="flex items-center gap-3">
           <Link
             href={altLink.href}
-            className="hidden text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors md:block"
+            className="text-xs sm:text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
             {altLink.label}
           </Link>

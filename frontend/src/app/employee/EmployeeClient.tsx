@@ -296,7 +296,7 @@ export default function EmployeePage() {
         altLink={{ href: "/dashboard", label: "Employer View" }}
       />
 
-      <div className="relative z-10 mx-auto max-w-5xl px-6">
+      <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6">
         {/* Connect wallet prompt */}
         {view === "connect" && (
           <div className="flex min-h-[60vh] items-center justify-center">
@@ -446,24 +446,24 @@ export default function EmployeePage() {
               <motion.div
                 variants={fadeUpSmall}
                 custom={0}
-                className="accent-card overflow-hidden px-6 py-5 mb-6"
+                className="accent-card overflow-hidden px-4 py-4 sm:px-6 sm:py-5 mb-6"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     <button
                       onClick={handleBack}
-                      className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+                      className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors shrink-0"
                     >
                       <ArrowLeft className="h-4 w-4" />
                     </button>
-                    <div>
+                    <div className="min-w-0">
                       <h1
-                        className="text-2xl font-bold tracking-tight md:text-3xl"
+                        className="text-xl font-bold tracking-tight sm:text-2xl md:text-3xl truncate"
                         style={{ fontFamily: "var(--font-display)" }}
                       >
                         {orgName || `${selectedOrgAddress.slice(0, 6)}...${selectedOrgAddress.slice(-4)}`}
                       </h1>
-                      <p className="mt-0.5 text-sm text-[var(--text-secondary)]">
+                      <p className="mt-0.5 text-xs sm:text-sm text-[var(--text-secondary)]">
                         {orgCreatedDate ? `Created ${orgCreatedDate} · ` : ""}
                         Paying in {displaySymbol}
                       </p>

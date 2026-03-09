@@ -29,12 +29,12 @@ export function Modal({ onClose, title, children, icon }: ModalProps) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 12 }}
           transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
-          className="relative w-full max-w-md overflow-hidden rounded-2xl border border-[var(--border-accent)] bg-[var(--bg-primary)] shadow-[0_0_0_1px_rgba(0,229,160,0.05),0_8px_60px_rgba(0,0,0,0.5),0_4px_40px_rgba(0,229,160,0.06)]"
+          className="relative w-full max-w-md overflow-hidden rounded-2xl border border-[var(--border-accent)] bg-[var(--bg-primary)] shadow-[0_0_0_1px_rgba(0,229,160,0.05),0_8px_60px_rgba(0,0,0,0.5),0_4px_40px_rgba(0,229,160,0.06)] max-h-[90vh] overflow-y-auto"
         >
           {/* Top accent line */}
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30" />
 
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">

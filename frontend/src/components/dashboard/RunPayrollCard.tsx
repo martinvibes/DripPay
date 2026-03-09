@@ -13,7 +13,7 @@ export function RunPayrollCard({ onExecute, activeCount }: RunPayrollCardProps) 
 
   return (
     <div className="accent-card overflow-hidden">
-      <div className="relative p-6">
+      <div className="relative p-4 sm:p-6">
         {/* Animated orbit ring behind the icon */}
         <div className="relative mb-5">
           <div className="relative inline-flex">

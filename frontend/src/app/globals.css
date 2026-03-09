@@ -126,8 +126,14 @@ body::before {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 24px;
+  padding: 16px;
   transition: all 0.25s ease;
+}
+
+@media (min-width: 640px) {
+  .stat-card {
+    padding: 24px;
+  }
 }
 
 .stat-card:hover {

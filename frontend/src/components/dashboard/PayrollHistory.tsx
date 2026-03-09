@@ -50,9 +50,9 @@ export function PayrollHistory({
 
   return (
     <div className="glass-card overflow-hidden !hover:transform-none">
-      <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
+      <div className="flex items-center justify-between border-b border-[var(--border)] px-4 sm:px-5 py-4">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-muted)]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-muted)] shrink-0">
             <Clock className="h-4 w-4 text-[var(--accent)]" />
           </div>
           <h3
@@ -62,12 +62,12 @@ export function PayrollHistory({
             Activity History
           </h3>
         </div>
-        <span className="text-xs text-[var(--text-muted)]">
+        <span className="text-xs text-[var(--text-muted)] shrink-0">
           {allEvents.length} events
         </span>
       </div>
 
-      <div className="p-4 space-y-2">
+      <div className="p-3 sm:p-4 space-y-2">
         {isLoading ? (
           <div className="py-6 text-center">
             <Loader2 className="h-5 w-5 animate-spin text-[var(--accent)] mx-auto mb-2" />
@@ -93,10 +93,10 @@ export function PayrollHistory({
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="group flex items-center justify-between rounded-xl bg-[rgba(255,255,255,0.02)] px-4 py-3 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+                  className="group flex items-center justify-between gap-2 rounded-xl bg-[rgba(255,255,255,0.02)] px-3 sm:px-4 py-3 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="relative flex flex-col items-center">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="relative flex flex-col items-center shrink-0">
                       <div
                         className={`h-2 w-2 rounded-full ${
                           isPayroll ? "bg-[var(--accent)]" : "bg-blue-400"
@@ -106,11 +106,11 @@ export function PayrollHistory({
                         <div className="absolute top-3 h-6 w-px bg-[var(--border)]" />
                       )}
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-medium">
                         {isPayroll ? "Payroll Executed" : "Deposit"}
                       </p>
-                      <p className="text-xs text-[var(--text-muted)]">
+                      <p className="text-[11px] sm:text-xs text-[var(--text-muted)] truncate">
                         {isPayroll
                           ? `${args.employeeCount?.toString() ?? "?"} employees`
                           : `${formatUnits(args.amount ?? BigInt(0), tokenDecimals)} ${tokenSymbol}`}
@@ -131,9 +131,10 @@ export function PayrollHistory({
                       </p>
                     </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(0,229,160,0.08)] px-2.5 py-0.5 text-xs font-medium text-[var(--accent)]">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(0,229,160,0.08)] px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs font-medium text-[var(--accent)] shrink-0">
                     <Check className="h-3 w-3" />
-                    Confirmed
+                    <span className="hidden sm:inline">Confirmed</span>
+                    <span className="sm:hidden">OK</span>
                   </span>
                 </motion.div>
               );

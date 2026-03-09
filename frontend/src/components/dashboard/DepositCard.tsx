@@ -101,10 +101,10 @@ export function DepositCard({
 
         <p className="text-xs text-[var(--text-muted)] mb-1">Contract Balance</p>
         <p
-          className="text-xl font-bold tracking-tight mb-1"
+          className="text-lg sm:text-xl font-bold tracking-tight mb-1 truncate"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          {formatBalance(contractBalance)} <span className="text-sm font-normal text-[var(--text-muted)]">{symbol}</span>
+          {formatBalance(contractBalance)} <span className="text-xs sm:text-sm font-normal text-[var(--text-muted)]">{symbol}</span>
         </p>
         <p className="text-[11px] text-[var(--text-muted)] mb-4">
           Available for employee withdrawals

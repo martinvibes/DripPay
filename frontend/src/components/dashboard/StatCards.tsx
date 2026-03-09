@@ -178,7 +178,7 @@ export function StatCards({
               {stat.label}
             </p>
             <p
-              className="text-xl font-bold tracking-tight"
+              className="text-lg sm:text-xl font-bold tracking-tight truncate"
               style={{ fontFamily: "var(--font-display)" }}
             >
               {stat.value}
