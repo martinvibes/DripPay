@@ -53,6 +53,32 @@ export function useOrganizationFactory() {
 }
 
 /**
+ * Hook for fetching organizations an employee belongs to.
+ * Uses the factory's getEmployeeOrganizations(address) view.
+ */
+export function useEmployeeOrganizations() {
+  const { address } = useAccount();
+
+  const {
+    data: employeeOrgs,
+    isLoading: isLoadingEmployeeOrgs,
+    refetch: refetchEmployeeOrgs,
+  } = useReadContract({
+    address: CONTRACTS.organizationFactory,
+    abi: ORGANIZATION_FACTORY_ABI,
+    functionName: "getEmployeeOrganizations",
+    args: address ? [address] : undefined,
+    query: { enabled: !!address && isContractsDeployed },
+  });
+
+  return {
+    employeeOrgs: (employeeOrgs as `0x${string}`[] | undefined) ?? [],
+    isLoadingEmployeeOrgs,
+    refetchEmployeeOrgs,
+  };
+}
+
+/**
  * Hook for single organization interactions.
  *
  * - Add/remove employees

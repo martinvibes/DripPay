@@ -48,6 +48,13 @@ export const ORGANIZATION_FACTORY_ABI = [
     outputs: [{ name: "", type: "address[]" }],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "getEmployeeOrganizations",
+    inputs: [{ name: "employee", type: "address" }],
+    outputs: [{ name: "", type: "address[]" }],
+    stateMutability: "view",
+  },
 ] as const;
 
 export const ORGANIZATION_ABI = [

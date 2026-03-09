@@ -12,7 +12,7 @@ import { TransactionHistory } from "@/components/employee/TransactionHistory";
 import { WithdrawCard } from "@/components/employee/WithdrawCard";
 import { PrivacyInfo } from "@/components/employee/PrivacyInfo";
 import { OrgInfo } from "@/components/employee/OrgInfo";
-import { useOrganization } from "@/hooks/useOrganization";
+import { useOrganization, useEmployeeOrganizations } from "@/hooks/useOrganization";
 import { useERC20 } from "@/hooks/useERC20";
 import { useFhevm } from "@/hooks/useFhevm";
 import { ORGANIZATION_ABI } from "@/lib/contracts";
@@ -69,10 +69,23 @@ export default function EmployeePage() {
 
   const { decryptBalance } = useFhevm();
 
+  // Auto-detect orgs from factory (employee was registered on-chain)
+  const { employeeOrgs, isLoadingEmployeeOrgs } = useEmployeeOrganizations();
+
   // Load saved orgs on mount
   useEffect(() => {
     setSavedOrgs(getSavedOrgs());
   }, []);
+
+  // Merge auto-detected orgs into saved orgs (deduplicated)
+  useEffect(() => {
+    if (employeeOrgs.length > 0) {
+      for (const addr of employeeOrgs) {
+        saveOrg(addr);
+      }
+      setSavedOrgs(getSavedOrgs());
+    }
+  }, [employeeOrgs]);
 
   // Read org data for selected org
   const {
@@ -352,7 +365,7 @@ export default function EmployeePage() {
           </div>
         )}
 
-        {/* Org selection — enter org address */}
+        {/* Org selection — auto-detected + manual fallback */}
         {view === "org-list" && (
           <div className="flex min-h-[60vh] items-center justify-center">
             <motion.div
@@ -369,14 +382,37 @@ export default function EmployeePage() {
                   Your Organizations
                 </h1>
                 <p className="text-sm text-[var(--text-secondary)]">
-                  Enter an organization contract address to view your balance
+                  {savedOrgs.length > 0
+                    ? "Select an organization to view your balance"
+                    : "Organizations you belong to will appear here automatically"}
                 </p>
               </div>
 
-              {/* Org address input */}
-              <div className="accent-card overflow-hidden p-4 sm:p-6 mb-4">
+              {/* Loading state */}
+              {isLoadingEmployeeOrgs && savedOrgs.length === 0 && (
+                <div className="accent-card overflow-hidden p-6 text-center mb-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-[var(--accent)] mx-auto mb-2" />
+                  <p className="text-xs text-[var(--text-muted)]">Checking for organizations...</p>
+                </div>
+              )}
+
+              {/* Your orgs (auto-detected + saved) */}
+              {savedOrgs.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {savedOrgs.map((addr) => (
+                    <SavedOrgCard
+                      key={addr}
+                      orgAddress={addr as `0x${string}`}
+                      onClick={() => handleSelectSavedOrg(addr)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Manual join — always available as fallback */}
+              <div className="accent-card overflow-hidden p-4 sm:p-6">
                 <label className="mb-2 block text-xs font-semibold text-[var(--text-secondary)]">
-                  Organization Contract Address
+                  Join by Contract Address
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <input
@@ -410,25 +446,9 @@ export default function EmployeePage() {
                   <p className="mt-2 text-xs text-red-400">{verifyError}</p>
                 )}
                 <p className="mt-2 text-[11px] text-[var(--text-muted)]">
-                  Ask your employer for the organization contract address
+                  Can&apos;t see your organization? Ask your employer for the contract address.
                 </p>
               </div>
-
-              {/* Saved orgs */}
-              {savedOrgs.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[var(--text-secondary)] px-1">
-                    Previously joined
-                  </p>
-                  {savedOrgs.map((addr) => (
-                    <SavedOrgCard
-                      key={addr}
-                      orgAddress={addr as `0x${string}`}
-                      onClick={() => handleSelectSavedOrg(addr)}
-                    />
-                  ))}
-                </div>
-              )}
             </motion.div>
           </div>
         )}

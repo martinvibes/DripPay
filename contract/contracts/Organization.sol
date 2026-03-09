@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {FHE, euint64, externalEuint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {OrganizationFactory} from "./OrganizationFactory.sol";
 
 /// @title Organization — manages employees, encrypted salaries, and batch payroll
 /// @notice Deployed by OrganizationFactory. Uses Zama fhEVM for fully encrypted payroll.
@@ -13,6 +14,7 @@ contract Organization is ZamaEthereumConfig {
     string public name;
     address public paymentToken; // address(0) = ETH, otherwise ERC-20
     uint256 public createdAt;
+    OrganizationFactory public factory;
 
     address[] private _employees;
     mapping(address => bool) public isEmployee;
@@ -43,11 +45,12 @@ contract Organization is ZamaEthereumConfig {
     }
 
     // ── Constructor ──────────────────────────────────────────────────────
-    constructor(string memory _name, address _admin, address _paymentToken) {
+    constructor(string memory _name, address _admin, address _paymentToken, address _factory) {
         name = _name;
         admin = _admin;
         paymentToken = _paymentToken;
         createdAt = block.timestamp;
+        factory = OrganizationFactory(_factory);
     }
 
     // ── Deposit Functions ───────────────────────────────────────────────
@@ -87,13 +90,6 @@ contract Organization is ZamaEthereumConfig {
 
     // ── Admin Functions ──────────────────────────────────────────────────
 
-    // /// @notice Add a single employee with an encrypted salary (deprecated — use addEmployees)
-    // function addEmployee(
-    //     address employee,
-    //     externalEuint64 encryptedSalary,
-    //     bytes calldata proof
-    // ) external onlyAdmin { ... }
-
     /// @notice Add one or more employees with encrypted salaries in a single transaction
     /// @param employees Array of employee wallet addresses
     /// @param encryptedSalaries Array of encrypted salary input handles (one per employee)
@@ -125,6 +121,9 @@ contract Organization is ZamaEthereumConfig {
             isEmployee[emp] = true;
             _employees.push(emp);
 
+            // Register employee in factory for auto-discovery
+            factory.registerEmployee(emp);
+
             emit EmployeeAdded(emp);
         }
     }
@@ -145,6 +144,9 @@ contract Organization is ZamaEthereumConfig {
                 break;
             }
         }
+
+        // Unregister employee from factory
+        factory.unregisterEmployee(employee);
 
         emit EmployeeRemoved(employee);
     }

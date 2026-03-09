@@ -420,6 +420,7 @@ export default function DashboardPage() {
                 <RunPayrollCard
                   onExecute={() => setShowPayrollConfirm(true)}
                   activeCount={employees.length}
+                  contractBalance={contractBalance}
                 />
                 <PayrollHistory
                   orgAddress={selectedOrgAddress}

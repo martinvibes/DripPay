@@ -7,9 +7,13 @@ import { EncryptedValue } from "@/components/shared/EncryptedValue";
 interface RunPayrollCardProps {
   onExecute: () => void;
   activeCount: number;
+  contractBalance?: bigint;
 }
 
-export function RunPayrollCard({ onExecute, activeCount }: RunPayrollCardProps) {
+export function RunPayrollCard({ onExecute, activeCount, contractBalance }: RunPayrollCardProps) {
+  const hasBalance = contractBalance !== undefined && contractBalance > BigInt(0);
+  const hasEmployees = activeCount > 0;
+  const canExecute = hasBalance && hasEmployees;
 
   return (
     <div className="accent-card overflow-hidden">
@@ -64,9 +68,17 @@ export function RunPayrollCard({ onExecute, activeCount }: RunPayrollCardProps) 
           </div>
         </div>
 
-        <button onClick={onExecute} className="btn-primary w-full !py-3">
+        <button
+          onClick={onExecute}
+          disabled={!canExecute}
+          className="btn-primary w-full !py-3 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
           <Play className="h-4 w-4" />
-          Execute Payroll
+          {!hasEmployees
+            ? "No Employees"
+            : !hasBalance
+              ? "No Balance"
+              : "Execute Payroll"}
         </button>
       </div>
     </div>
