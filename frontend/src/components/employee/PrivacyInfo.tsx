@@ -17,7 +17,7 @@ const PRIVACY_ITEMS = [
 
 export function PrivacyInfo() {
   return (
-    <div className="glass-card p-6 !hover:transform-none">
+    <div className="glass-card p-4 sm:p-6 !hover:transform-none">
       <div className="flex items-center gap-2 mb-4">
         <ShieldCheck className="h-4 w-4 text-[var(--accent)]" />
         <h3

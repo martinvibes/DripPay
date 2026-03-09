@@ -37,29 +37,29 @@ export function BalanceCard({
       }}
     >
       <div className="border-gradient glow-accent">
-        <div className="rounded-2xl bg-[var(--bg-primary)] p-8">
-          <div className="flex items-start justify-between mb-6">
+        <div className="rounded-2xl bg-[var(--bg-primary)] p-4 sm:p-8">
+          <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6">
             <div>
-              <p className="text-sm text-[var(--text-muted)] mb-1">
+              <p className="text-xs sm:text-sm text-[var(--text-muted)] mb-1">
                 Available Balance
               </p>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 {isRevealed && balance !== null ? (
                   <motion.span
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="text-4xl font-extrabold tracking-tight md:text-5xl"
+                    className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
                     <span className="gradient-text">{balance}</span>
-                    <span className="ml-2 text-lg text-[var(--text-muted)]">
+                    <span className="ml-2 text-base sm:text-lg text-[var(--text-muted)]">
                       {tokenSymbol}
                     </span>
                   </motion.span>
                 ) : (
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1">
-                      {[...Array(10)].map((_, j) => (
+                      {[...Array(8)].map((_, j) => (
                         <motion.span
                           key={j}
                           animate={
@@ -76,7 +76,7 @@ export function BalanceCard({
                                 }
                               : {}
                           }
-                          className="inline-block h-10 w-4 rounded bg-[var(--accent)]"
+                          className="inline-block h-8 w-3 sm:h-10 sm:w-4 rounded bg-[var(--accent)]"
                           style={{ opacity: 0.2 }}
                         />
                       ))}
@@ -87,7 +87,7 @@ export function BalanceCard({
             </div>
             <button
               onClick={onToggleReveal}
-              className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
+              className={`flex items-center justify-center gap-2 rounded-xl border px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all w-full sm:w-auto shrink-0 ${
                 isRevealed
                   ? "border-[var(--border-accent)] bg-[var(--accent-muted)] text-[var(--accent)]"
                   : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-hover)] hover:text-[var(--text-primary)]"
@@ -114,7 +114,7 @@ export function BalanceCard({
           </div>
 
           {/* Info row */}
-          <div className="flex flex-wrap gap-6 border-t border-[var(--border)] pt-5">
+          <div className="flex flex-wrap gap-4 sm:gap-6 border-t border-[var(--border)] pt-4 sm:pt-5">
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-[var(--accent)]" />
               <span className="text-xs text-[var(--text-secondary)]">
@@ -144,8 +144,8 @@ export function BalanceCard({
                 exit={{ opacity: 0, height: 0 }}
                 className="mt-5 overflow-hidden"
               >
-                <div className="rounded-xl bg-[rgba(0,229,160,0.04)] border border-[var(--border-accent)] p-4">
-                  <div className="space-y-3">
+                <div className="rounded-xl bg-[rgba(0,229,160,0.04)] border border-[var(--border-accent)] p-3 sm:p-4">
+                  <div className="space-y-2 sm:space-y-3">
                     {[
                       {
                         label: "Fetching encrypted handle from contract...",

@@ -306,7 +306,7 @@ export default function EmployeePage() {
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] as const }}
               className="w-full max-w-md"
             >
-              <div className="accent-card overflow-hidden p-8 text-center">
+              <div className="accent-card overflow-hidden p-6 sm:p-8 text-center">
                 <div className="relative mx-auto mb-6 h-20 w-20">
                   <motion.div
                     animate={{ rotate: 360 }}
@@ -331,7 +331,7 @@ export default function EmployeePage() {
                 >
                   View Your Balance
                 </h2>
-                <p className="mb-8 text-sm text-[var(--text-secondary)]">
+                <p className="mb-6 sm:mb-8 text-xs sm:text-sm text-[var(--text-secondary)]">
                   Connect your wallet to see the organizations you belong to
                   and decrypt your balance.
                 </p>
@@ -361,9 +361,9 @@ export default function EmployeePage() {
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] as const }}
               className="w-full max-w-lg"
             >
-              <div className="text-center mb-8">
+              <div className="text-center mb-5 sm:mb-8">
                 <h1
-                  className="text-3xl font-bold tracking-tight md:text-4xl mb-3"
+                  className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl mb-2 sm:mb-3"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
                   Your Organizations
@@ -374,11 +374,11 @@ export default function EmployeePage() {
               </div>
 
               {/* Org address input */}
-              <div className="accent-card overflow-hidden p-6 mb-4">
+              <div className="accent-card overflow-hidden p-4 sm:p-6 mb-4">
                 <label className="mb-2 block text-xs font-semibold text-[var(--text-secondary)]">
                   Organization Contract Address
                 </label>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <input
                     type="text"
                     placeholder="0x..."
@@ -435,13 +435,13 @@ export default function EmployeePage() {
 
         {/* Balance view */}
         {view === "balance" && selectedOrgAddress && (
-          <div className="py-8">
+          <div className="py-4 sm:py-8">
             {/* Header banner */}
             <motion.div
               initial="hidden"
               animate="visible"
               variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-              className="mb-8"
+              className="mb-4 sm:mb-8"
             >
               <motion.div
                 variants={fadeUpSmall}
@@ -497,9 +497,9 @@ export default function EmployeePage() {
               </motion.div>
             )}
 
-            <div className="grid gap-6 lg:grid-cols-3">
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
               {/* Left Column */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="lg:col-span-2 space-y-4 sm:space-y-6">
                 <BalanceCard
                   balance={decryptedBalance}
                   tokenSymbol={displaySymbol}
@@ -519,7 +519,7 @@ export default function EmployeePage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.5 }}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
                 <WithdrawCard
                   orgAddress={selectedOrgAddress}

@@ -12,7 +12,7 @@ export function OrgInfo({
   createdDate,
 }: OrgInfoProps) {
   return (
-    <div className="glass-card p-6">
+    <div className="glass-card p-4 sm:p-6">
       <p className="text-xs text-[var(--text-muted)] mb-2">Organization</p>
       <p
         className="font-bold mb-1"

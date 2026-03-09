@@ -34,16 +34,16 @@ export function RunPayrollCard({ onExecute, activeCount }: RunPayrollCardProps) 
         </div>
 
         <h3
-          className="font-bold text-lg mb-1"
+          className="font-bold text-base sm:text-lg mb-1"
           style={{ fontFamily: "var(--font-display)" }}
         >
           Run Payroll
         </h3>
-        <p className="text-xs text-[var(--text-muted)] mb-5">
+        <p className="text-xs text-[var(--text-muted)] mb-3 sm:mb-5">
           Execute encrypted batch payment
         </p>
 
-        <div className="space-y-3 mb-5">
+        <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-5">
           <div className="flex items-center justify-between rounded-lg bg-[rgba(255,255,255,0.02)] px-3 py-2.5">
             <span className="text-sm text-[var(--text-secondary)]">
               Active employees

@@ -270,17 +270,17 @@ export default function DashboardPage() {
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] as const }}
               className="w-full max-w-md"
             >
-              <div className="accent-card overflow-hidden p-8 text-center">
-                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--accent-muted)]">
-                  <Shield className="h-8 w-8 text-[var(--accent)]" />
+              <div className="accent-card overflow-hidden p-6 sm:p-8 text-center">
+                <div className="mx-auto mb-4 sm:mb-6 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--accent-muted)]">
+                  <Shield className="h-7 w-7 sm:h-8 sm:w-8 text-[var(--accent)]" />
                 </div>
                 <h2
-                  className="mb-2 text-2xl font-bold"
+                  className="mb-2 text-xl sm:text-2xl font-bold"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
                   Employer Dashboard
                 </h2>
-                <p className="mb-8 text-sm text-[var(--text-secondary)]">
+                <p className="mb-6 sm:mb-8 text-xs sm:text-sm text-[var(--text-secondary)]">
                   Connect your wallet to manage organizations and payroll.
                 </p>
                 <WalletConnect />
@@ -322,13 +322,13 @@ export default function DashboardPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
-            className="py-8"
+            className="py-4 sm:py-8"
           >
             <motion.div
               initial="hidden"
               animate="visible"
               variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-              className="mb-8"
+              className="mb-4 sm:mb-8"
             >
               <motion.div
                 variants={fadeUpSmall}
@@ -386,7 +386,7 @@ export default function DashboardPage() {
               payrollRunCount={payrollEvents.length}
             />
 
-            <div className="grid gap-6 lg:grid-cols-3">
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
               <EmployeeTable
                 employees={employees}
                 onAddEmployee={() => setShowAddEmployee(true)}
@@ -400,7 +400,7 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.5 }}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
                 <DepositCard
                   orgAddress={selectedOrgAddress}

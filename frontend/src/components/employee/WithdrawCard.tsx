@@ -95,11 +95,11 @@ export function WithdrawCard({
 
   return (
     <div className="accent-card overflow-hidden">
-      <div className="p-6">
-        <div className="flex items-center gap-3 mb-5">
+      <div className="p-4 sm:p-6">
+        <div className="flex items-center gap-3 mb-4 sm:mb-5">
           <div className="relative">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-muted)]">
-              <Download className="h-5 w-5 text-[var(--accent)]" />
+            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-[var(--accent-muted)]">
+              <Download className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--accent)]" />
             </div>
             {isWithdrawing && !isSuccess && (
               <motion.div

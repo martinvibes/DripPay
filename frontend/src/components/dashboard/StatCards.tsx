@@ -151,7 +151,7 @@ export function StatCards({
       initial="hidden"
       animate="visible"
       variants={staggerFast}
-      className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      className="mb-4 sm:mb-8 grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4"
     >
       {statCards.map((stat, i) => (
         <motion.div

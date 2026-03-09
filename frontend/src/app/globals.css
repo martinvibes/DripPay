@@ -105,8 +105,22 @@ body::before {
 .glass-card:hover {
   background: var(--bg-card-hover);
   border-color: var(--border-hover);
-  transform: translateY(-2px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+@media (min-width: 640px) {
+  .glass-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 639px) {
+  .glass-card {
+    border-radius: 12px;
+  }
+  .accent-card {
+    border-radius: 12px;
+  }
 }
 
 /* ═══ Accent Card — green glow border ═══ */
@@ -138,8 +152,13 @@ body::before {
 
 .stat-card:hover {
   border-color: var(--border-hover);
-  transform: translateY(-1px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+@media (min-width: 640px) {
+  .stat-card:hover {
+    transform: translateY(-1px);
+  }
 }
 
 /* ═══ Table row ═══ */
@@ -158,18 +177,25 @@ body::before {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 28px;
+  padding: 10px 20px;
   background: var(--accent);
   color: var(--bg-deep);
   font-family: var(--font-display), system-ui, sans-serif;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   border-radius: 10px;
   border: none;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .btn-primary {
+    padding: 12px 28px;
+    font-size: 14px;
+  }
 }
 
 .btn-primary::after {
@@ -200,16 +226,23 @@ body::before {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 28px;
+  padding: 10px 20px;
   background: transparent;
   color: var(--text-secondary);
   font-family: var(--font-display), system-ui, sans-serif;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   border-radius: 10px;
   border: 1px solid var(--border);
   cursor: pointer;
   transition: all 0.25s ease;
+}
+
+@media (min-width: 640px) {
+  .btn-secondary {
+    padding: 12px 28px;
+    font-size: 14px;
+  }
 }
 
 .btn-secondary:hover {
@@ -222,7 +255,7 @@ body::before {
 /* ═══ Inputs ═══ */
 .input-field {
   width: 100%;
-  padding: 11px 14px;
+  padding: 10px 12px;
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -231,6 +264,12 @@ body::before {
   font-size: 14px;
   outline: none;
   transition: all 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .input-field {
+    padding: 11px 14px;
+  }
 }
 
 .input-field:focus {
