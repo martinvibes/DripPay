@@ -293,11 +293,8 @@ export default function DashboardPage() {
           <OrgSelector
             key={`orgs-${orgs.length}-${orgs.map((o) => o.name).join(",")}`}
             title="Your Organizations"
-            subtitle={
-              isLoadingOrgs
-                ? "Loading organizations from contract..."
-                : "Select an organization to manage or create a new one"
-            }
+            subtitle="Select an organization to manage or create a new one"
+            isLoading={isLoadingOrgs}
             orgs={orgs}
             onSelect={handleSelectOrg}
             onCreateNew={() => setView("create-org")}
