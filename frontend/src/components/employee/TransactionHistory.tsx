@@ -72,18 +72,18 @@ export function TransactionHistory({
       transition={{ delay: 0.35, duration: 0.5 }}
       className="glass-card overflow-hidden !hover:transform-none"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-4 sm:p-5 py-4">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center justify-between border-b border-[var(--border)] px-4 sm:p-5 py-4">
+        <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 text-[var(--text-muted)] shrink-0" />
           <h2
-            className="text-base sm:text-lg font-bold truncate"
+            className="text-base sm:text-lg font-bold"
             style={{ fontFamily: "var(--font-display)" }}
           >
             Transaction History
           </h2>
         </div>
-        <span className="text-xs font-medium text-[var(--text-muted)] shrink-0 rounded-full bg-background px-2.5 py-1">
-          {allEvents.length} transaction{allEvents.length !== 1 && "s"}
+        <span className="text-xs text-[var(--text-muted)] shrink-0">
+          {allEvents.length} transactions
         </span>
       </div>
 
@@ -120,11 +120,11 @@ export function TransactionHistory({
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="group flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between gap-3 sm:gap-4 rounded-xl bg-[rgba(255,255,255,0.02)] px-3 sm:px-4 py-3 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+                  className="group flex items-center justify-between gap-2 rounded-xl bg-[rgba(255,255,255,0.02)] px-3 sm:px-4 py-3 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
                 >
-                  <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                     <div
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg mt-0.5 sm:mt-0 ${
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                         isWithdrawal
                           ? "bg-[rgba(239,68,68,0.08)]"
                           : "bg-[rgba(0,229,160,0.08)]"
@@ -136,21 +136,17 @@ export function TransactionHistory({
                         <ArrowDownLeft className="h-4 w-4 text-[var(--accent)]" />
                       )}
                     </div>
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0">
                       <p className="text-xs sm:text-sm font-medium">
                         {isWithdrawal ? "Withdrawal" : "Payroll Credit"}
                       </p>
-                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] sm:text-xs text-[var(--text-muted)] mt-0.5">
-                        <span className="truncate max-w-full">
-                          {isWithdrawal
-                            ? `−${formatUnits(args.amount ?? BigInt(0), tokenDecimals)} ${tokenSymbol}`
-                            : `${args.employeeCount?.toString() ?? "?"} employees paid`}
-                        </span>
+                      <div className="flex items-center gap-1 text-[11px] sm:text-xs text-[var(--text-muted)] truncate">
+                        {isWithdrawal
+                          ? `−${formatUnits(args.amount ?? BigInt(0), tokenDecimals)} ${tokenSymbol}`
+                          : `${args.employeeCount?.toString() ?? "?"} employees paid`}
                         {txHash && (
-                          <span className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-[var(--border-accent)]">
-                              •
-                            </span>
+                          <>
+                            <span className="mx-1">·</span>
                             <a
                               href={`${ETHERSCAN_URL}/${txHash}`}
                               target="_blank"
@@ -160,16 +156,16 @@ export function TransactionHistory({
                               {shortHash}
                               <ExternalLink className="h-2.5 w-2.5" />
                             </a>
-                          </span>
+                          </>
                         )}
                       </div>
                     </div>
                   </div>
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-medium shrink-0 self-start sm:self-auto shadow-sm ${
+                    className={`inline-flex items-center gap-1 rounded-full px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs font-medium shrink-0 ${
                       isWithdrawal
-                        ? "bg-[rgba(239,68,68,0.1)] text-red-400 border border-red-500/20"
-                        : "bg-[rgba(0,229,160,0.1)] text-[var(--accent)] border border-accent/20"
+                        ? "bg-[rgba(239,68,68,0.08)] text-red-400"
+                        : "bg-[rgba(0,229,160,0.08)] text-[var(--accent)]"
                     }`}
                   >
                     <Check className="h-3 w-3" />

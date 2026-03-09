@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { ArrowDownToLine, Loader2, Check, Wallet } from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowDownToLine, Loader2, Check, Wallet, ExternalLink } from "lucide-react";
 import { parseEther } from "viem";
 import { useWaitForTransactionReceipt } from "wagmi";
 import { useERC20 } from "@/hooks/useERC20";
@@ -17,6 +17,8 @@ interface DepositCardProps {
   tokenDecimals?: number;
   onDeposit: (amount: bigint, isETH: boolean) => void;
   isPending: boolean;
+  txHash?: `0x${string}`;
+  resetTx?: () => void;
   refetchBalance: () => void;
 }
 
@@ -29,9 +31,13 @@ export function DepositCard({
   tokenDecimals = 18,
   onDeposit,
   isPending,
+  txHash,
+  resetTx,
   refetchBalance,
 }: DepositCardProps) {
   const [amount, setAmount] = useState("");
+  const [depositedAmount, setDepositedAmount] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const {
     approve,
@@ -42,6 +48,26 @@ export function DepositCard({
     !isETH ? paymentToken : undefined,
     !isETH ? orgAddress : undefined,
   );
+
+  const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
+    hash: txHash,
+    query: { enabled: !!txHash },
+  });
+
+  // Track tx confirmation
+  useEffect(() => {
+    if (isTxConfirmed && txHash && !isSuccess) {
+      setIsSuccess(true);
+      refetchBalance();
+      if (!isETH) refetchAllowance();
+
+      setTimeout(() => {
+        setIsSuccess(false);
+        setDepositedAmount("");
+        resetTx?.();
+      }, 3500);
+    }
+  }, [isTxConfirmed, txHash, isSuccess]);
 
   const parsedAmount = (() => {
     if (!amount || isNaN(Number(amount))) return BigInt(0);
@@ -66,15 +92,13 @@ export function DepositCard({
 
   const symbol = isETH ? "ETH" : tokenSymbol || "TOKEN";
 
+  const isWaitingForConfirmation = !!txHash && !isTxConfirmed && !isSuccess;
+
   const handleDeposit = () => {
     if (parsedAmount <= BigInt(0)) return;
+    setDepositedAmount(amount);
     onDeposit(parsedAmount, isETH);
     setAmount("");
-    // Refetch balance after a short delay for tx to propagate
-    setTimeout(() => {
-      refetchBalance();
-      if (!isETH) refetchAllowance();
-    }, 3000);
   };
 
   const handleApprove = () => {
@@ -82,6 +106,10 @@ export function DepositCard({
     approve(parsedAmount);
     setTimeout(() => refetchAllowance(), 3000);
   };
+
+  const shortTx = txHash
+    ? `${txHash.slice(0, 6)}...${txHash.slice(-4)}`
+    : "";
 
   return (
     <motion.div
@@ -110,61 +138,151 @@ export function DepositCard({
           Available for employee withdrawals
         </p>
 
-        <div className="space-y-3">
-          <div className="relative">
-            <input
-              type="number"
-              placeholder="0.0"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              step="any"
-              min="0"
-              className="input-field !pr-16 text-sm"
-              disabled={isPending || isApproving}
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)] font-medium">
-              {symbol}
-            </div>
-          </div>
-
-          {needsApproval ? (
-            <button
-              onClick={handleApprove}
-              disabled={isApproving || parsedAmount <= BigInt(0)}
-              className="btn-secondary w-full !py-2.5 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+        <AnimatePresence mode="wait">
+          {isSuccess ? (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="py-3 text-center"
             >
-              {isApproving ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Approving...
-                </>
-              ) : (
-                <>
-                  <Check className="h-3.5 w-3.5" />
-                  Approve {symbol}
-                </>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", damping: 12, stiffness: 200 }}
+                className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(0,229,160,0.1)] border border-[var(--border-accent)]"
+              >
+                <Check className="h-6 w-6 text-[var(--accent)]" />
+              </motion.div>
+              <p
+                className="font-bold gradient-text text-base mb-1"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                {depositedAmount} {symbol} Deposited
+              </p>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Transaction confirmed
+              </p>
+              {txHash && (
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                >
+                  {shortTx}
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </a>
               )}
-            </button>
+            </motion.div>
           ) : (
-            <button
-              onClick={handleDeposit}
-              disabled={isPending || parsedAmount <= BigInt(0)}
-              className="btn-primary w-full !py-2.5 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            <motion.div
+              key="form"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
-              {isPending ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Depositing...
-                </>
-              ) : (
-                <>
-                  <ArrowDownToLine className="h-3.5 w-3.5" />
-                  Deposit {symbol}
-                </>
-              )}
-            </button>
+              <div className="space-y-3">
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="0.0"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    step="any"
+                    min="0"
+                    className="input-field !pr-16 text-sm"
+                    disabled={isPending || isApproving || isWaitingForConfirmation}
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)] font-medium">
+                    {symbol}
+                  </div>
+                </div>
+
+                {/* Tx progress */}
+                <AnimatePresence>
+                  {(isPending || isWaitingForConfirmation) && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="rounded-lg bg-[rgba(0,229,160,0.04)] border border-[var(--border-accent)] p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          {isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin text-[var(--accent)]" />
+                          ) : (
+                            <Check className="h-3 w-3 text-[var(--accent)]" />
+                          )}
+                          <span className={`text-[11px] ${!isPending ? "text-[var(--text-secondary)]" : "text-[var(--accent)]"}`}>
+                            {isPending ? "Confirm in your wallet..." : "Wallet confirmed"}
+                          </span>
+                        </div>
+                        {isWaitingForConfirmation && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex items-center gap-2"
+                          >
+                            <Loader2 className="h-3 w-3 animate-spin text-[var(--accent)]" />
+                            <span className="text-[11px] text-[var(--accent)]">
+                              Waiting for on-chain confirmation...
+                            </span>
+                          </motion.div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {needsApproval ? (
+                  <button
+                    onClick={handleApprove}
+                    disabled={isApproving || parsedAmount <= BigInt(0)}
+                    className="btn-secondary w-full !py-2.5 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {isApproving ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Approving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        Approve {symbol}
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleDeposit}
+                    disabled={isPending || isWaitingForConfirmation || parsedAmount <= BigInt(0)}
+                    className="btn-primary w-full !py-2.5 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {isPending ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Confirm in wallet...
+                      </>
+                    ) : isWaitingForConfirmation ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Confirming...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowDownToLine className="h-3.5 w-3.5" />
+                        Deposit {symbol}
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
       </div>
     </motion.div>
   );

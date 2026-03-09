@@ -66,6 +66,8 @@ export default function DashboardPage() {
     deposit,
     removeEmployee,
     isPending,
+    txHash: orgTxHash,
+    resetTx,
     refetchEmployees,
     refetchBalance,
   } = useOrganization(selectedOrgAddress ?? undefined);
@@ -411,6 +413,8 @@ export default function DashboardPage() {
                   tokenDecimals={displayDecimals}
                   onDeposit={deposit}
                   isPending={isPending}
+                  txHash={orgTxHash}
+                  resetTx={resetTx}
                   refetchBalance={refetchBalance}
                 />
                 <RunPayrollCard

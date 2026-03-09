@@ -61,7 +61,7 @@ export function useOrganizationFactory() {
  * - Read org data (including paymentToken, contractBalance, createdAt)
  */
 export function useOrganization(orgAddress?: `0x${string}`) {
-  const { writeContract, isPending } = useWriteContract();
+  const { writeContract, isPending, data: txHash, reset: resetTx } = useWriteContract();
 
   const addEmployees = (
     employees: `0x${string}`[],
@@ -185,6 +185,8 @@ export function useOrganization(orgAddress?: `0x${string}`) {
     createdAt: createdAt as bigint | undefined,
     isETH,
     isPending,
+    txHash,
+    resetTx,
     refetchEmployees,
     refetchBalance,
   };
