@@ -14,11 +14,11 @@
 
 ## The Problem
 
-Payroll on-chain sounds great until you realize **everyone can see what everyone earns**. Every salary, every payment, every balance — public on the blockchain for anyone to inspect. That's not how the real world works, and it shouldn't be how web3 works either.
+Payroll on-chain sounds great until you realize **everyone can see what everyone earns**. Every salary, every payment, every balance public on the blockchain for anyone to inspect. That's not how the real world works, and it shouldn't be how web3 works either.
 
 ## The Solution
 
-DripPay uses **Fully Homomorphic Encryption (FHE)** to make on-chain payroll actually private. Salaries are encrypted *before* they hit the chain. The contract does math on encrypted numbers — adds salaries to balances, compares withdrawal amounts — without ever decrypting them. Only the individual employee can decrypt their own balance, client-side, with their wallet.
+DripPay uses **Fully Homomorphic Encryption (FHE)** to make on-chain payroll actually private. Salaries are encrypted *before* they hit the chain. The contract does math on encrypted numbers adds salaries to balances, compares withdrawal amounts without ever decrypting them. Only the individual employee can decrypt their own balance, client-side, with their wallet.
 
 **Not even the blockchain validators can see what you earn.**
 
@@ -244,11 +244,11 @@ The key insight: **the contract can do arithmetic on encrypted values without ev
 
 ## Design
 
-DripPay uses a **"Refined Noir"** aesthetic — a pure dark background (`#09090b`) with a single green accent (`#00e5a0`). No rainbow gradients, no multi-color chaos. The UI is designed to feel like a premium fintech product, not a hackathon prototype.
+DripPay uses a **"Refined Noir"** aesthetic a pure dark background (`#09090b`) with a single green accent (`#00e5a0`). No rainbow gradients, no multi-color chaos. The UI is designed to feel like a premium fintech product, not a hackathon prototype.
 
 - **Typography**: Bricolage Grotesque for headings, Plus Jakarta Sans for body
 - **Animations**: Framer Motion with staggered reveals, spring physics, and subtle hover states
-- **Mobile-first**: Fully responsive down to 400px — card layouts on mobile, tables on desktop
+- **Mobile-first**: Fully responsive down to 400px card layouts on mobile, tables on desktop
 - **Dark mode only**: Because payroll apps should look serious
 
 ---

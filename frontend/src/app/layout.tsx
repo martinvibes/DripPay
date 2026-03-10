@@ -21,7 +21,7 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "DripPay — Private Payroll, Onchain",
   description:
-    "End-to-end encrypted payroll powered by Fully Homomorphic Encryption. Nobody sees what you earn — not even the blockchain.",
+    "End-to-end encrypted payroll powered by Fully Homomorphic Encryption. Nobody sees what you earn not even the blockchain.",
   icons: { icon: "/icon.svg" },
 };
 
