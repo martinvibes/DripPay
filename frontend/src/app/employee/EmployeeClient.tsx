@@ -529,6 +529,7 @@ export default function EmployeePage() {
                 />
                 <TransactionHistory
                   orgAddress={selectedOrgAddress}
+                  orgName={orgName || `${selectedOrgAddress.slice(0, 6)}...${selectedOrgAddress.slice(-4)}`}
                   tokenSymbol={displaySymbol}
                   tokenDecimals={displayDecimals}
                 />

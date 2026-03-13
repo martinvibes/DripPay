@@ -20,6 +20,8 @@ contract Organization is ZamaEthereumConfig {
     mapping(address => bool) public isEmployee;
     mapping(address => euint64) private _salaries;  // encrypted monthly salary
     mapping(address => euint64) private _balances;  // encrypted accumulated balance
+    euint64 private _totalPayrollCost;              // encrypted sum of all salaries
+    uint256 public payrollRunCount;                 // number of times payroll has been executed
 
     // ── Events ───────────────────────────────────────────────────────────
     event EmployeeAdded(address indexed employee);
@@ -27,6 +29,8 @@ contract Organization is ZamaEthereumConfig {
     event PayrollExecuted(uint256 timestamp, uint256 employeeCount);
     event Withdrawal(address indexed employee, uint256 amount);
     event Deposit(address indexed from, uint256 amount);
+    event SalaryUpdated(address indexed employee);
+    event BudgetStatus(bool sufficient);
 
     // ── Errors ───────────────────────────────────────────────────────────
     error OnlyAdmin();
@@ -51,6 +55,8 @@ contract Organization is ZamaEthereumConfig {
         paymentToken = _paymentToken;
         createdAt = block.timestamp;
         factory = OrganizationFactory(_factory);
+        _totalPayrollCost = FHE.allowThis(FHE.asEuint64(0));
+        FHE.allow(_totalPayrollCost, _admin);
     }
 
     // ── Deposit Functions ───────────────────────────────────────────────
@@ -121,6 +127,10 @@ contract Organization is ZamaEthereumConfig {
             isEmployee[emp] = true;
             _employees.push(emp);
 
+            // Update encrypted total payroll cost
+            _totalPayrollCost = FHE.allowThis(FHE.add(_totalPayrollCost, salary));
+            FHE.allow(_totalPayrollCost, admin);
+
             // Register employee in factory for auto-discovery
             factory.registerEmployee(emp);
 
@@ -134,6 +144,10 @@ contract Organization is ZamaEthereumConfig {
         if (!isEmployee[employee]) revert NotEmployee();
 
         isEmployee[employee] = false;
+
+        // Subtract salary from total payroll cost before removing
+        _totalPayrollCost = FHE.allowThis(FHE.sub(_totalPayrollCost, _salaries[employee]));
+        FHE.allow(_totalPayrollCost, admin);
 
         // Remove from array by swap-and-pop
         uint256 len = _employees.length;
@@ -162,6 +176,7 @@ contract Organization is ZamaEthereumConfig {
             FHE.allow(_balances[emp], emp);
         }
 
+        payrollRunCount++;
         emit PayrollExecuted(block.timestamp, len);
     }
 
@@ -221,5 +236,72 @@ contract Organization is ZamaEthereumConfig {
     /// @return The array of employee addresses
     function getEmployees() external view returns (address[] memory) {
         return _employees;
+    }
+
+    /// @notice Get the encrypted salary handle for an employee (for admin/employee decryption)
+    /// @param employee The employee address
+    /// @return The encrypted salary handle (euint64)
+    function salaryOf(address employee) external view returns (euint64) {
+        return _salaries[employee];
+    }
+
+    /// @notice Get the encrypted total payroll cost handle (sum of all salaries)
+    /// @return The encrypted total payroll cost (euint64)
+    function getTotalPayrollCost() external view returns (euint64) {
+        return _totalPayrollCost;
+    }
+
+    /// @notice Get the number of payroll runs executed
+    /// @return The payroll run count
+    function getPayrollRunCount() external view returns (uint256) {
+        return payrollRunCount;
+    }
+
+    // ── Feature: Salary Updates ───────────────────────────────────────────
+
+    /// @notice Update an employee's encrypted salary
+    /// @param employee The employee address to update
+    /// @param encryptedSalary The new encrypted salary input handle
+    /// @param proof The FHE input proof
+    function updateSalary(
+        address employee,
+        externalEuint64 encryptedSalary,
+        bytes calldata proof
+    ) external onlyAdmin {
+        if (!isEmployee[employee]) revert NotEmployee();
+
+        euint64 newSalary = FHE.fromExternal(encryptedSalary, proof);
+
+        // Update total payroll cost: subtract old salary, add new salary
+        _totalPayrollCost = FHE.allowThis(
+            FHE.add(FHE.sub(_totalPayrollCost, _salaries[employee]), newSalary)
+        );
+        FHE.allow(_totalPayrollCost, admin);
+
+        // Store new salary with proper permissions
+        _salaries[employee] = FHE.allowThis(newSalary);
+        FHE.allow(_salaries[employee], employee);
+        FHE.allow(_salaries[employee], admin);
+
+        emit SalaryUpdated(employee);
+    }
+
+    // ── Feature: Confidential Budget Check ────────────────────────────────
+
+    /// @notice Check if contract balance covers total payroll (FHE comparison)
+    /// @dev Compares plaintext contract balance against encrypted total salary cost
+    /// @return sufficient Encrypted boolean - true if budget covers payroll
+    function checkBudget() external returns (ebool) {
+        uint256 contractBal;
+        if (paymentToken == address(0)) {
+            contractBal = address(this).balance;
+        } else {
+            contractBal = IERC20(paymentToken).balanceOf(address(this));
+        }
+        euint64 encBalance = FHE.asEuint64(uint64(contractBal));
+        ebool sufficient = FHE.le(_totalPayrollCost, encBalance);
+        FHE.allowThis(sufficient);
+        FHE.allow(sufficient, admin);
+        return sufficient;
     }
 }

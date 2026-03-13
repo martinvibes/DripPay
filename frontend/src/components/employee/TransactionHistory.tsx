@@ -11,26 +11,37 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  FileText,
 } from "lucide-react";
 import { formatUnits } from "viem";
+import { AnimatePresence } from "framer-motion";
 import { useAccount } from "wagmi";
 import { useContractEvents } from "@/hooks/useContractEvents";
 import { ORGANIZATION_ABI } from "@/lib/contracts";
+import { PayslipModal } from "@/components/shared/PayslipModal";
+import { ExportHistory } from "@/components/shared/ExportHistory";
 
 const ETHERSCAN_URL = "https://sepolia.etherscan.io/tx";
 
 interface TransactionHistoryProps {
   orgAddress?: `0x${string}`;
+  orgName?: string;
   tokenSymbol?: string;
   tokenDecimals?: number;
 }
 
 export function TransactionHistory({
   orgAddress,
+  orgName = "Organization",
   tokenSymbol = "ETH",
   tokenDecimals = 18,
 }: TransactionHistoryProps) {
   const { address } = useAccount();
+  const [payslipEvent, setPayslipEvent] = useState<{
+    txHash: string;
+    blockNumber: bigint;
+    employeeCount: number;
+  } | null>(null);
 
   const { events: withdrawalEvents, isLoading: loadingWithdrawals } =
     useContractEvents({
@@ -59,6 +70,21 @@ export function TransactionHistory({
 
   const isLoading = loadingWithdrawals || loadingPayroll;
   const [expanded, setExpanded] = useState(false);
+
+  const exportEvents = allEvents.map((evt) => {
+    const isWithdrawal = evt._type === "withdrawal";
+    const args = evt.args as Record<string, any>;
+    const txHash = (evt.transactionHash as string) || "";
+    return {
+      type: isWithdrawal ? "Withdrawal" : "Payroll Credit",
+      details: isWithdrawal
+        ? `-${formatUnits(args.amount ?? BigInt(0), tokenDecimals)} ${tokenSymbol}`
+        : `${args.employeeCount?.toString() ?? "?"} employees paid`,
+      txHash,
+      blockNumber: (evt.blockNumber ?? BigInt(0)).toString(),
+      etherscanLink: txHash ? `${ETHERSCAN_URL}/${txHash}` : "",
+    };
+  });
   const COLLAPSED_COUNT = 5;
   const visibleEvents = expanded
     ? allEvents
@@ -82,9 +108,17 @@ export function TransactionHistory({
             Transaction History
           </h2>
         </div>
-        <span className="text-xs text-[var(--text-muted)] shrink-0">
-          {allEvents.length} transactions
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <ExportHistory
+            events={exportEvents}
+            orgName={orgName}
+            tokenSymbol={tokenSymbol}
+            mode="employee"
+          />
+          <span className="text-xs text-[var(--text-muted)]">
+            {allEvents.length} transactions
+          </span>
+        </div>
       </div>
 
       <div className="p-3 sm:p-4 space-y-2">
@@ -161,16 +195,34 @@ export function TransactionHistory({
                       </div>
                     </div>
                   </div>
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs font-medium shrink-0 ${
-                      isWithdrawal
-                        ? "bg-[rgba(239,68,68,0.08)] text-red-400"
-                        : "bg-[rgba(0,229,160,0.08)] text-[var(--accent)]"
-                    }`}
-                  >
-                    <Check className="h-3 w-3" />
-                    {isWithdrawal ? "Sent" : "Received"}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {!isWithdrawal && txHash && (
+                      <button
+                        onClick={() =>
+                          setPayslipEvent({
+                            txHash: txHash as string,
+                            blockNumber: evt.blockNumber ?? BigInt(0),
+                            employeeCount: Number(args.employeeCount ?? 0),
+                          })
+                        }
+                        className="flex items-center gap-1 rounded-full bg-[rgba(255,255,255,0.03)] border border-[var(--border)] px-2 py-0.5 text-[10px] sm:text-xs font-medium text-[var(--text-muted)] hover:text-[var(--accent)] hover:border-[var(--border-accent)] transition-colors"
+                        title="View payslip"
+                      >
+                        <FileText className="h-3 w-3" />
+                        <span className="hidden sm:inline">Payslip</span>
+                      </button>
+                    )}
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs font-medium ${
+                        isWithdrawal
+                          ? "bg-[rgba(239,68,68,0.08)] text-red-400"
+                          : "bg-[rgba(0,229,160,0.08)] text-[var(--accent)]"
+                      }`}
+                    >
+                      <Check className="h-3 w-3" />
+                      {isWithdrawal ? "Sent" : "Received"}
+                    </span>
+                  </div>
                 </motion.div>
               );
             })}
@@ -195,6 +247,24 @@ export function TransactionHistory({
           </>
         )}
       </div>
+
+      {/* Payslip modal */}
+      <AnimatePresence>
+        {payslipEvent && orgAddress && address && (
+          <PayslipModal
+            onClose={() => setPayslipEvent(null)}
+            orgAddress={orgAddress}
+            orgName={orgName}
+            txHash={payslipEvent.txHash}
+            blockNumber={payslipEvent.blockNumber}
+            tokenSymbol={tokenSymbol}
+            tokenDecimals={tokenDecimals}
+            mode="employee"
+            employeeAddress={address}
+            employeeCount={payslipEvent.employeeCount}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

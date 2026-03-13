@@ -2,24 +2,34 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Clock, Check, ExternalLink, ArrowDownLeft, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Clock, Check, ExternalLink, ArrowDownLeft, Loader2, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { formatUnits } from "viem";
+import { AnimatePresence } from "framer-motion";
 import { useContractEvents } from "@/hooks/useContractEvents";
 import { ORGANIZATION_ABI } from "@/lib/contracts";
+import { PayslipModal } from "@/components/shared/PayslipModal";
+import { ExportHistory } from "@/components/shared/ExportHistory";
 
 const ETHERSCAN_URL = "https://sepolia.etherscan.io/tx";
 
 interface PayrollHistoryProps {
   orgAddress?: `0x${string}`;
+  orgName?: string;
   tokenSymbol?: string;
   tokenDecimals?: number;
 }
 
 export function PayrollHistory({
   orgAddress,
+  orgName = "Organization",
   tokenSymbol = "ETH",
   tokenDecimals = 18,
 }: PayrollHistoryProps) {
+  const [receiptEvent, setReceiptEvent] = useState<{
+    txHash: string;
+    blockNumber: bigint;
+    employeeCount: number;
+  } | null>(null);
   const { events: payrollEvents, isLoading: loadingPayroll } = useContractEvents({
     address: orgAddress,
     abi: ORGANIZATION_ABI as any,
@@ -44,6 +54,21 @@ export function PayrollHistory({
 
   const isLoading = loadingPayroll || loadingDeposits;
   const [expanded, setExpanded] = useState(false);
+
+  const exportEvents = allEvents.map((evt) => {
+    const isPayroll = evt._type === "payroll";
+    const args = evt.args as Record<string, any>;
+    const txHash = (evt.transactionHash as string) || "";
+    return {
+      type: isPayroll ? "Payroll Executed" : "Deposit",
+      details: isPayroll
+        ? `${args.employeeCount?.toString() ?? "?"} employees`
+        : `${formatUnits(args.amount ?? BigInt(0), tokenDecimals)} ${tokenSymbol}`,
+      txHash,
+      blockNumber: (evt.blockNumber ?? BigInt(0)).toString(),
+      etherscanLink: txHash ? `${ETHERSCAN_URL}/${txHash}` : "",
+    };
+  });
   const COLLAPSED_COUNT = 5;
   const visibleEvents = expanded ? allEvents : allEvents.slice(0, COLLAPSED_COUNT);
   const hasMore = allEvents.length > COLLAPSED_COUNT;
@@ -62,9 +87,17 @@ export function PayrollHistory({
             Activity History
           </h3>
         </div>
-        <span className="text-xs text-[var(--text-muted)] shrink-0">
-          {allEvents.length} events
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <ExportHistory
+            events={exportEvents}
+            orgName={orgName}
+            tokenSymbol={tokenSymbol}
+            mode="employer"
+          />
+          <span className="text-xs text-[var(--text-muted)]">
+            {allEvents.length} events
+          </span>
+        </div>
       </div>
 
       <div className="p-3 sm:p-4 space-y-2">
@@ -131,11 +164,29 @@ export function PayrollHistory({
                       </p>
                     </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(0,229,160,0.08)] px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs font-medium text-[var(--accent)] shrink-0">
-                    <Check className="h-3 w-3" />
-                    <span className="hidden sm:inline">Confirmed</span>
-                    <span className="sm:hidden">OK</span>
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isPayroll && txHash && (
+                      <button
+                        onClick={() =>
+                          setReceiptEvent({
+                            txHash: txHash as string,
+                            blockNumber: evt.blockNumber ?? BigInt(0),
+                            employeeCount: Number(args.employeeCount ?? 0),
+                          })
+                        }
+                        className="flex items-center gap-1 rounded-full bg-[rgba(255,255,255,0.03)] border border-[var(--border)] px-2 py-0.5 text-[10px] sm:text-xs font-medium text-[var(--text-muted)] hover:text-[var(--accent)] hover:border-[var(--border-accent)] transition-colors"
+                        title="View receipt"
+                      >
+                        <FileText className="h-3 w-3" />
+                        <span className="hidden sm:inline">Receipt</span>
+                      </button>
+                    )}
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(0,229,160,0.08)] px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs font-medium text-[var(--accent)]">
+                      <Check className="h-3 w-3" />
+                      <span className="hidden sm:inline">Confirmed</span>
+                      <span className="sm:hidden">OK</span>
+                    </span>
+                  </div>
                 </motion.div>
               );
             })}
@@ -160,6 +211,23 @@ export function PayrollHistory({
           </>
         )}
       </div>
+
+      {/* Receipt modal */}
+      <AnimatePresence>
+        {receiptEvent && orgAddress && (
+          <PayslipModal
+            onClose={() => setReceiptEvent(null)}
+            orgAddress={orgAddress}
+            orgName={orgName}
+            txHash={receiptEvent.txHash}
+            blockNumber={receiptEvent.blockNumber}
+            tokenSymbol={tokenSymbol}
+            tokenDecimals={tokenDecimals}
+            mode="employer"
+            employeeCount={receiptEvent.employeeCount}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

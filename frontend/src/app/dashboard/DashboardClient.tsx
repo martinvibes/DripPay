@@ -13,6 +13,7 @@ import { EmployeeTable } from "@/components/dashboard/EmployeeTable";
 import { RunPayrollCard } from "@/components/dashboard/RunPayrollCard";
 import { PayrollHistory } from "@/components/dashboard/PayrollHistory";
 import { AddEmployeeModal } from "@/components/dashboard/AddEmployeeModal";
+import { UpdateSalaryModal } from "@/components/dashboard/UpdateSalaryModal";
 import { PayrollConfirmModal } from "@/components/dashboard/PayrollConfirmModal";
 import { DepositCard } from "@/components/dashboard/DepositCard";
 import {
@@ -55,6 +56,10 @@ export default function DashboardPage() {
   const [view, setView] = useState<View>("connect");
   const [showAddEmployee, setShowAddEmployee] = useState(false);
   const [showPayrollConfirm, setShowPayrollConfirm] = useState(false);
+  const [showUpdateSalary, setShowUpdateSalary] = useState<{
+    address: `0x${string}`;
+    name: string;
+  } | null>(null);
 
   const {
     orgName,
@@ -396,6 +401,10 @@ export default function DashboardPage() {
                   removeEmployee(addr);
                   setTimeout(() => refetchEmployees(), 2000);
                 }}
+                onUpdateSalary={(addr, name) => setShowUpdateSalary({ address: addr, name })}
+                orgAddress={selectedOrgAddress!}
+                tokenSymbol={displaySymbol}
+                tokenDecimals={displayDecimals}
                 isRemoving={isPending}
               />
               <motion.div
@@ -421,9 +430,13 @@ export default function DashboardPage() {
                   onExecute={() => setShowPayrollConfirm(true)}
                   activeCount={employees.length}
                   contractBalance={contractBalance}
+                  orgAddress={selectedOrgAddress!}
+                  tokenSymbol={displaySymbol}
+                  tokenDecimals={displayDecimals}
                 />
                 <PayrollHistory
                   orgAddress={selectedOrgAddress}
+                  orgName={orgName || "Organization"}
                   tokenSymbol={displaySymbol}
                   tokenDecimals={displayDecimals}
                 />
@@ -453,6 +466,22 @@ export default function DashboardPage() {
             orgAddress={selectedOrgAddress}
             existingCount={employees.length}
             existingAddresses={contractEmployees as `0x${string}`[] ?? []}
+            tokenSymbol={displaySymbol}
+            tokenDecimals={displayDecimals}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showUpdateSalary && selectedOrgAddress && (
+          <UpdateSalaryModal
+            onClose={() => setShowUpdateSalary(null)}
+            onSuccess={() => {
+              setShowUpdateSalary(null);
+            }}
+            orgAddress={selectedOrgAddress}
+            employeeAddress={showUpdateSalary.address}
+            employeeName={showUpdateSalary.name}
             tokenSymbol={displaySymbol}
             tokenDecimals={displayDecimals}
           />

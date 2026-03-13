@@ -152,6 +152,20 @@ export function useOrganization(orgAddress?: `0x${string}`) {
     }
   };
 
+  const updateSalary = (
+    employee: `0x${string}`,
+    encryptedSalary: `0x${string}`,
+    proof: `0x${string}`
+  ) => {
+    if (!orgAddress) return;
+    writeContract({
+      address: orgAddress,
+      abi: ORGANIZATION_ABI,
+      functionName: "updateSalary",
+      args: [employee, encryptedSalary, proof],
+    });
+  };
+
   // Read org data
   const { data: orgName } = useReadContract({
     address: orgAddress,
@@ -195,6 +209,13 @@ export function useOrganization(orgAddress?: `0x${string}`) {
     query: { enabled: !!orgAddress },
   });
 
+  const { data: payrollRunCount } = useReadContract({
+    address: orgAddress,
+    abi: ORGANIZATION_ABI,
+    functionName: "payrollRunCount",
+    query: { enabled: !!orgAddress },
+  });
+
   const isETH = !paymentToken || paymentToken === ZERO_ADDRESS;
 
   return {
@@ -203,12 +224,14 @@ export function useOrganization(orgAddress?: `0x${string}`) {
     runPayroll,
     withdraw,
     deposit,
+    updateSalary,
     orgName: orgName as string | undefined,
     employees: (employees as `0x${string}`[] | undefined) ?? [],
     adminAddress: adminAddress as `0x${string}` | undefined,
     paymentToken: paymentToken as `0x${string}` | undefined,
     contractBalance: contractBalance as bigint | undefined,
     createdAt: createdAt as bigint | undefined,
+    payrollRunCount: payrollRunCount as bigint | undefined,
     isETH,
     isPending,
     txHash,
