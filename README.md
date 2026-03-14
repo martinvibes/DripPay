@@ -14,6 +14,10 @@
   <a href="#quickstart">Get Started</a>
 </p>
 
+<p align="center">
+  <img src="drippayreviewimg.png" alt="DripPay Landing Page" width="800" />
+</p>
+
 ---
 
 ## The Problem
