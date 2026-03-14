@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Shield, Copy, Check } from "lucide-react";
+import { ArrowLeft, Shield, Copy, Check, Building2 } from "lucide-react";
 import Link from "next/link";
+import { useAccount } from "wagmi";
+import { WalletConnect } from "@/components/shared/WalletConnect";
 import { AppNav } from "@/components/shared/AppNav";
 import { StatCards } from "@/components/dashboard/StatCards";
 import { EmployeeTable } from "@/components/dashboard/EmployeeTable";
@@ -24,6 +26,7 @@ import { Star4, CrossMark, Diamond, Dot } from "@/components/shared/Stars";
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as `0x${string}`;
 
 export default function OrgDashboard({ address: orgAddress }: { address: `0x${string}` }) {
+  const { isConnected } = useAccount();
   const [showAddEmployee, setShowAddEmployee] = useState(false);
   const [showPayrollConfirm, setShowPayrollConfirm] = useState(false);
   const [showUpdateSalary, setShowUpdateSalary] = useState<{
@@ -142,6 +145,29 @@ export default function OrgDashboard({ address: orgAddress }: { address: `0x${st
       />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6">
+        {!isConnected ? (
+          <div className="flex min-h-[80vh] items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="w-full max-w-md text-center"
+            >
+              <div className="accent-card overflow-hidden p-6 sm:p-8">
+                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgba(0,229,160,0.08)] border border-[rgba(0,229,160,0.15)]">
+                  <Building2 className="h-8 w-8 text-[var(--accent)]" />
+                </div>
+                <h2 className="mb-2 text-xl sm:text-2xl font-bold" style={{ fontFamily: "var(--font-display)" }}>
+                  Wallet Disconnected
+                </h2>
+                <p className="mb-6 text-xs sm:text-sm text-[var(--text-secondary)]">
+                  Connect your wallet to view this organization&apos;s dashboard.
+                </p>
+                <WalletConnect />
+              </div>
+            </motion.div>
+          </div>
+        ) : (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -260,6 +286,7 @@ export default function OrgDashboard({ address: orgAddress }: { address: `0x${st
             </motion.div>
           </div>
         </motion.div>
+        )}
       </div>
 
       {/* Modals */}

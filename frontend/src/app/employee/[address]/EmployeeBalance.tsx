@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Lock } from "lucide-react";
+import { ArrowLeft, Lock, Shield } from "lucide-react";
 import Link from "next/link";
 import { useAccount, useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import { AppNav } from "@/components/shared/AppNav";
+import { WalletConnect } from "@/components/shared/WalletConnect";
 import { BalanceCard } from "@/components/employee/BalanceCard";
 import { TransactionHistory } from "@/components/employee/TransactionHistory";
 import { WithdrawCard } from "@/components/employee/WithdrawCard";
@@ -29,7 +30,7 @@ import {
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as `0x${string}`;
 
 export default function EmployeeBalance({ orgAddress }: { orgAddress: `0x${string}` }) {
-  const { address: connectedAddress } = useAccount();
+  const { address: connectedAddress, isConnected } = useAccount();
 
   const [isBalanceRevealed, setIsBalanceRevealed] = useState(false);
   const [isDecrypting, setIsDecrypting] = useState(false);
@@ -142,6 +143,29 @@ export default function EmployeeBalance({ orgAddress }: { orgAddress: `0x${strin
       />
 
       <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6">
+        {!isConnected ? (
+          <div className="flex min-h-[80vh] items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="w-full max-w-md text-center"
+            >
+              <div className="accent-card overflow-hidden p-6 sm:p-8">
+                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgba(0,229,160,0.08)] border border-[rgba(0,229,160,0.15)]">
+                  <Shield className="h-8 w-8 text-[var(--accent)]" />
+                </div>
+                <h2 className="mb-2 text-xl sm:text-2xl font-bold" style={{ fontFamily: "var(--font-display)" }}>
+                  Wallet Disconnected
+                </h2>
+                <p className="mb-6 text-xs sm:text-sm text-[var(--text-secondary)]">
+                  Connect your wallet to view your balance and transactions.
+                </p>
+                <WalletConnect />
+              </div>
+            </motion.div>
+          </div>
+        ) : (
         <div className="py-4 sm:py-8">
           {/* Header */}
           <motion.div
@@ -242,6 +266,7 @@ export default function EmployeeBalance({ orgAddress }: { orgAddress: `0x${strin
             </motion.div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
