@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="frontend/src/app/icon.svg" alt="DripPay Logo" width="64" height="64" />
+</p>
+
 <h1 align="center">DripPay</h1>
 
 <p align="center">
@@ -5,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://sepolia.etherscan.io/address/0xed23CD37400A86C978Ce029aBdCb8F4540d8Ee87">Deployed on Sepolia</a> &middot;
+  <a href="https://sepolia.etherscan.io/address/0xE7121d656dc7DF514242Ba516AE8a8e061d3336A">Deployed on Sepolia</a> &middot;
   Built with <a href="https://docs.zama.ai/fhevm">Zama fhEVM</a> &middot;
   <a href="#quickstart">Get Started</a>
 </p>
@@ -18,7 +22,7 @@ Payroll on-chain sounds great until you realize **everyone can see what everyone
 
 ## The Solution
 
-DripPay uses **Fully Homomorphic Encryption (FHE)** to make on-chain payroll actually private. Salaries are encrypted *before* they hit the chain. The contract does math on encrypted numbers adds salaries to balances, compares withdrawal amounts without ever decrypting them. Only the individual employee can decrypt their own balance, client-side, with their wallet.
+DripPay uses **Fully Homomorphic Encryption (FHE)** to make on-chain payroll actually private. Salaries are encrypted _before_ they hit the chain. The contract does math on encrypted numbers adds salaries to balances, compares withdrawal amounts without ever decrypting them. Only the individual employee can decrypt their own balance, client-side, with their wallet.
 
 **Not even the blockchain validators can see what you earn.**
 
@@ -56,16 +60,16 @@ Employer                          Smart Contract                      Employee
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
+| Layer          | Technology                                             |
+| -------------- | ------------------------------------------------------ |
 | **Encryption** | [Zama fhEVM](https://docs.zama.ai/fhevm) (TFHE on EVM) |
-| **Network** | Ethereum Sepolia + Zama coprocessor |
-| **Contracts** | Solidity 0.8.27, Hardhat, OpenZeppelin |
-| **Frontend** | Next.js 16, React 19, TypeScript |
-| **Styling** | Tailwind CSS v4, Framer Motion |
-| **Wallet** | wagmi v2, viem, RainbowKit |
-| **FHE Client** | fhevmjs (encrypt inputs, decrypt outputs) |
-| **Fonts** | Bricolage Grotesque + Plus Jakarta Sans |
+| **Network**    | Ethereum Sepolia + Zama coprocessor                    |
+| **Contracts**  | Solidity 0.8.27, Hardhat, OpenZeppelin                 |
+| **Frontend**   | Next.js 16, React 19, TypeScript                       |
+| **Styling**    | Tailwind CSS v4, Framer Motion                         |
+| **Wallet**     | wagmi v2, viem, RainbowKit                             |
+| **FHE Client** | fhevmjs (encrypt inputs, decrypt outputs)              |
+| **Fonts**      | Bricolage Grotesque + Plus Jakarta Sans                |
 
 ---
 
@@ -103,26 +107,31 @@ DripPay/
 
 The entry point. Deploys new Organization contracts and maintains a registry of which employees belong to which orgs.
 
-| Function | Description |
-|----------|-------------|
-| `createOrg(name, paymentToken)` | Deploy a new org. `address(0)` = ETH payments |
-| `getOrganizations(admin)` | Get all orgs an admin created |
-| `getEmployeeOrganizations(employee)` | Get all orgs an employee belongs to |
+| Function                             | Description                                   |
+| ------------------------------------ | --------------------------------------------- |
+| `createOrg(name, paymentToken)`      | Deploy a new org. `address(0)` = ETH payments |
+| `getOrganizations(admin)`            | Get all orgs an admin created                 |
+| `getEmployeeOrganizations(employee)` | Get all orgs an employee belongs to           |
 
 ### Organization
 
 Where the magic happens. All salary and balance data is encrypted on-chain using Zama's TFHE library.
 
-| Function | Who | Description |
-|----------|-----|-------------|
-| `addEmployees(addresses, encryptedSalaries, proof)` | Admin | Add employees with FHE-encrypted salaries |
-| `removeEmployee(address)` | Admin | Remove an employee |
-| `runPayroll()` | Admin | Add salary to every employee's balance (all encrypted) |
-| `deposit(amount)` | Anyone | Fund the org's payment pool |
-| `withdraw(amount)` | Employee | Withdraw from accumulated balance |
-| `balanceOf(employee)` | View | Get encrypted balance handle for client-side decryption |
+| Function                                            | Who      | Description                                               |
+| --------------------------------------------------- | -------- | --------------------------------------------------------- |
+| `addEmployees(addresses, encryptedSalaries, proof)` | Admin    | Add employees with FHE-encrypted salaries                 |
+| `removeEmployee(address)`                           | Admin    | Remove an employee                                        |
+| `runPayroll()`                                      | Admin    | Add salary to every employee's balance (all encrypted)    |
+| `deposit(amount)`                                   | Anyone   | Fund the org's payment pool                               |
+| `withdraw(amount)`                                  | Employee | Withdraw from accumulated balance                         |
+| `balanceOf(employee)`                               | View     | Get encrypted balance handle for client-side decryption   |
+| `salaryOf(employee)`                                | View     | Get encrypted salary handle for admin/employee decryption |
+| `getTotalPayrollCost()`                             | View     | Get encrypted sum of all salaries                         |
+| `updateSalary(employee, encSalary, proof)`          | Admin    | Update an employee's encrypted salary                     |
+| `checkBudget()`                                     | Admin    | FHE comparison: does balance cover total payroll?         |
 
 **Key FHE operations in `runPayroll()`:**
+
 ```solidity
 // This addition happens on encrypted values — nobody sees the amounts
 euint64 newBalance = FHE.add(_balances[emp], _salaries[emp]);
@@ -172,11 +181,13 @@ npx hardhat run scripts/deploy.ts --network sepolia
 ```
 
 Current deployment:
-- **OrganizationFactory**: [`0xed23CD37400A86C978Ce029aBdCb8F4540d8Ee87`](https://sepolia.etherscan.io/address/0xed23CD37400A86C978Ce029aBdCb8F4540d8Ee87)
+
+- **OrganizationFactory**: [`0xE7121d656dc7DF514242Ba516AE8a8e061d3336A`](https://sepolia.etherscan.io/address/0xE7121d656dc7DF514242Ba516AE8a8e061d3336A)
 
 Copy the factory address to `frontend/.env`:
+
 ```
-NEXT_PUBLIC_FACTORY_ADDRESS=0xed23CD37400A86C978Ce029aBdCb8F4540d8Ee87
+NEXT_PUBLIC_FACTORY_ADDRESS=0xE7121d656dc7DF514242Ba516AE8a8e061d3336A
 ```
 
 ### 4. Run Frontend
@@ -215,6 +226,7 @@ Open [http://localhost:3000](http://localhost:3000).
 Traditional smart contracts store everything in plaintext. Anyone with an Etherscan link can see every balance and every transfer. DripPay changes this:
 
 **Encryption (employer adding salary):**
+
 ```typescript
 const instance = await getFhevmInstance();
 const input = instance.createEncryptedInput(contractAddress, userAddress);
@@ -224,12 +236,14 @@ const encrypted = await input.encrypt();
 ```
 
 **On-chain math (contract running payroll):**
+
 ```solidity
 // FHE.add operates on ciphertext — the EVM never sees plaintext
 _balances[emp] = FHE.add(_balances[emp], _salaries[emp]);
 ```
 
 **Decryption (employee viewing balance):**
+
 ```typescript
 const { publicKey, privateKey } = instance.generateKeypair();
 const eip712 = instance.createEIP712(publicKey, [contractAddress], timestamp, 1);
@@ -258,6 +272,7 @@ DripPay uses a **"Refined Noir"** aesthetic a pure dark background (`#09090b`) w
 Built for **PL Genesis: Frontiers of Collaboration** (March 2026).
 
 **Target Bounties:**
+
 - **Zama** — Confidential Blockchain Protocol
 - **Crecimiento** — Bring Argentina Onchain
 - **Funding the Commons** — Bridge Between Builders
@@ -267,10 +282,24 @@ Built for **PL Genesis: Frontiers of Collaboration** (March 2026).
 
 ## What's Next
 
-- [ ] Recurring payroll (time-based auto-execution)
-- [ ] Multi-sig admin support
-- [ ] Payslip generation (encrypted PDF)
-- [ ] Phase 2: Confidential Fundraising module
+### Completed
+
+- [x] Encrypted salary storage and batch payroll (FHE.add on ciphertext)
+- [x] Employee auto-discovery (factory indexes employees, no CA sharing needed)
+- [x] Salary reveal for admins (per-employee and bulk "Reveal All Salaries")
+- [x] Encrypted total payroll cost (FHE sum of all salaries, admin-decryptable)
+- [x] Confidential budget check (FHE comparison: balance vs total payroll)
+- [x] Salary updates (re-encrypt and update any employee's salary)
+- [x] Encrypted payslips and receipts (per-event, printable/PDF)
+- [x] Full history export (PDF and CSV)
+- [x] Interactive demo mode (guided walkthrough, no wallet needed)
+
+### Roadmap
+
+- [ ] **Phase 2: Verifiable Income Proofs** - The biggest unsolved problem in confidential payroll. Salaries are private, but employees still need to _prove_ their income to banks, landlords, embassies, and lenders. We plan to integrate ZK attestations so employees can generate proofs like "my salary is above $X/month" without revealing the exact amount. The flow: decrypt salary client-side, generate a ZK proof (Circom/Noir) over the plaintext, third parties verify the proof on-chain against the encrypted handle. This bridges FHE privacy with real-world verifiability.
+- [ ] **Phase 3: Confidential Fundraising** - Teams and DAOs raise funds on-chain with individual contribution amounts encrypted, but totals publicly verifiable using FHE aggregation
+- [ ] Recurring payroll (time-based auto-execution via Chainlink Keepers)
+- [ ] Multi-sig admin support (require N-of-M approvals to run payroll)
 - [ ] Mainnet deployment
 
 ---
