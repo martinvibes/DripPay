@@ -431,7 +431,7 @@ export function PayslipModal({
 
             <div class="footer">
               <div class="footer-text">This is a system-generated document and does not require a physical signature. Verified on Ethereum Sepolia.</div>
-              <div class="footer-text" style="font-weight: 600;">drippay.xyz</div>
+              <div class="footer-text" style="font-weight: 600;">drip-payy.xyz</div>
             </div>
           </div>
           
@@ -704,7 +704,7 @@ export function PayslipModal({
               </a>
               <div className="flex items-center gap-4">
                 <span className="text-[10px] font-medium text-text-muted">
-                  drippay.xyz
+                  drip-payy.xyz
                 </span>
                 <div className="flex items-center gap-1 text-[10px] font-bold text-accent">
                   <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></div>
