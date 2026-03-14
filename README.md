@@ -271,19 +271,6 @@ DripPay uses a **"Refined Noir"** aesthetic a pure dark background (`#09090b`) w
 
 ---
 
-## Hackathon
-
-Built for **PL Genesis: Frontiers of Collaboration** (March 2026).
-
-**Target Bounties:**
-
-- **Zama** — Confidential Blockchain Protocol
-- **Crecimiento** — Bring Argentina Onchain
-- **Funding the Commons** — Bridge Between Builders
-- **Fresh Code Track** — $50,000 pool
-
----
-
 ## What's Next
 
 ### Completed
