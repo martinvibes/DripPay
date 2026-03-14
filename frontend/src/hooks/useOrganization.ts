@@ -1,6 +1,7 @@
 "use client";
 
-import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import { useState, useEffect } from "react";
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import {
   CONTRACTS,
   ORGANIZATION_FACTORY_ABI,
@@ -88,6 +89,20 @@ export function useEmployeeOrganizations() {
  */
 export function useOrganization(orgAddress?: `0x${string}`) {
   const { writeContract, isPending, data: txHash, reset: resetTx } = useWriteContract();
+  const {
+    writeContract: writeRemove,
+    data: removeTxHash,
+    reset: resetRemove,
+  } = useWriteContract();
+
+  // Track which specific employee address is being removed
+  const [removingAddress, setRemovingAddress] = useState<`0x${string}` | null>(null);
+
+  // Wait for remove tx to confirm on-chain
+  const { isSuccess: isRemoveConfirmed } = useWaitForTransactionReceipt({
+    hash: removeTxHash,
+    query: { enabled: !!removeTxHash },
+  });
 
   const addEmployees = (
     employees: `0x${string}`[],
@@ -105,12 +120,18 @@ export function useOrganization(orgAddress?: `0x${string}`) {
 
   const removeEmployee = (employee: `0x${string}`) => {
     if (!orgAddress) return;
-    writeContract({
-      address: orgAddress,
-      abi: ORGANIZATION_ABI,
-      functionName: "removeEmployee",
-      args: [employee],
-    });
+    setRemovingAddress(employee);
+    writeRemove(
+      {
+        address: orgAddress,
+        abi: ORGANIZATION_ABI,
+        functionName: "removeEmployee",
+        args: [employee],
+      },
+      {
+        onError: () => setRemovingAddress(null),
+      }
+    );
   };
 
   const runPayroll = () => {
@@ -218,6 +239,16 @@ export function useOrganization(orgAddress?: `0x${string}`) {
 
   const isETH = !paymentToken || paymentToken === ZERO_ADDRESS;
 
+  // When remove tx confirms on-chain, refetch employees and clear state
+  useEffect(() => {
+    if (isRemoveConfirmed && removingAddress) {
+      refetchEmployees();
+      setRemovingAddress(null);
+      resetRemove();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRemoveConfirmed]);
+
   return {
     addEmployees,
     removeEmployee,
@@ -234,6 +265,7 @@ export function useOrganization(orgAddress?: `0x${string}`) {
     payrollRunCount: payrollRunCount as bigint | undefined,
     isETH,
     isPending,
+    removingAddress,
     txHash,
     resetTx,
     refetchEmployees,

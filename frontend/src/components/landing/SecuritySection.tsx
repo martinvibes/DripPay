@@ -1,61 +1,25 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Lock, Zap, EyeOff, Sparkles } from "lucide-react";
+import { Shield, Lock, Zap, EyeOff, Sparkles, Eye } from "lucide-react";
 import { fadeUp, stagger } from "@/lib/animations";
-import { Star4, CrossMark, Dot } from "@/components/shared/Stars";
 import { useState, useEffect } from "react";
 
+const EASE = [0.22, 1, 0.36, 1] as const;
+
 const SECURITY_POINTS = [
-  "Salaries encrypted with TFHE before reaching the chain",
-  "Computations performed entirely on ciphertext",
-  "Only the employee's wallet can decrypt their balance",
-  "Zero plaintext exposure ever",
+  { icon: Lock, text: "Salaries encrypted with TFHE before reaching the chain" },
+  { icon: Zap, text: "Computations performed entirely on ciphertext" },
+  { icon: EyeOff, text: "Only the employee's wallet can decrypt their balance" },
+  { icon: Shield, text: "Zero plaintext exposure - ever" },
 ];
 
 export function SecuritySection() {
   return (
     <section id="security" className="section-padding relative overflow-hidden">
-      {/* Decorative elements */}
-      <Star4
-        className="top-[12%] right-[10%]"
-        size={16}
-        opacity={0.1}
-        pulse
-        delay={0.8}
-      />
-      <Star4
-        className="bottom-[18%] left-[5%]"
-        size={14}
-        opacity={0.12}
-        rotate
-        delay={1.5}
-      />
-      <CrossMark
-        className="top-[8%] left-[15%]"
-        size={10}
-        opacity={0.08}
-        rotate
-        delay={0.3}
-      />
-      <Dot
-        className="top-[25%] right-[20%]"
-        size={3}
-        opacity={0.15}
-        pulse
-        delay={1}
-      />
-      <Dot
-        className="bottom-[15%] right-[8%]"
-        size={4}
-        opacity={0.12}
-        pulse
-        delay={2}
-      />
-
       <div className="mx-auto max-w-[var(--max-width)] px-6">
         <div className="grid items-center gap-16 lg:grid-cols-2 lg:gap-24">
-          {/* Left — Text */}
+          {/* Left - Text */}
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -65,55 +29,64 @@ export function SecuritySection() {
             <motion.p
               variants={fadeUp}
               custom={0}
-              className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]"
+              className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-[var(--accent)]"
             >
               Advanced Privacy
             </motion.p>
             <motion.h2
               variants={fadeUp}
               custom={1}
-              className="mb-5 text-3xl font-bold tracking-tight sm:text-4xl"
+              className="mb-5 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl"
               style={{ fontFamily: "var(--font-display)" }}
             >
               Your Numbers,
               <br />
-              <span className="text-secondary">Nobody Else&apos;s Eyes.</span>
+              <span className="text-[var(--text-secondary)]">
+                Nobody Else&apos;s Eyes.
+              </span>
             </motion.h2>
             <motion.p
               variants={fadeUp}
               custom={2}
-              className="mb-8 max-w-md text-sm leading-relaxed text-[var(--text-secondary)]"
+              className="mb-10 max-w-md text-sm leading-relaxed text-[var(--text-secondary)]"
             >
-              We&apos;ve built a &quot;Black Box&quot; for your payroll. Using
-              Zama&apos;s Fully Homomorphic Encryption, we process payments
-              while the amounts stay hidden from the entire world — even from
-              the blockchain itself.
+              Using Zama&apos;s Fully Homomorphic Encryption, we process
+              payments while the amounts stay hidden from the entire world -
+              even from the blockchain itself.
             </motion.p>
 
             <motion.div variants={fadeUp} custom={3} className="space-y-4">
-              {SECURITY_POINTS.map((point) => (
-                <div key={point} className="flex items-start gap-3">
-                  <div className="mt-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent-muted">
-                    <Shield className="h-3 w-3 text-accent" />
+              {SECURITY_POINTS.map((point, i) => (
+                <motion.div
+                  key={point.text}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 + i * 0.1, duration: 0.6, ease: EASE }}
+                  className="group flex items-start gap-3"
+                >
+                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(0,229,160,0.08)] group-hover:bg-[rgba(0,229,160,0.15)] transition-colors duration-300">
+                    <point.icon className="h-3.5 w-3.5 text-[var(--accent)]" />
                   </div>
-                  <span className="text-sm font-medium text-[var(--text-secondary)]">
-                    {point}
+                  <span className="text-sm font-medium text-[var(--text-secondary)] leading-relaxed">
+                    {point.text}
                   </span>
-                </div>
+                </motion.div>
               ))}
             </motion.div>
           </motion.div>
 
-          {/* Right — Privacy Visualization */}
-          <PrivacyVisualization />
+          {/* Right - Encryption Flow Visualization */}
+          <EncryptionFlow />
         </div>
       </div>
     </section>
   );
 }
 
-function PrivacyVisualization() {
-  const [stage, setStage] = useState(0); // 0: plaintext, 1: encrypting, 2: processing, 3: result
+/** A much more impressive encryption flow visualization */
+function EncryptionFlow() {
+  const [stage, setStage] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -122,183 +95,170 @@ function PrivacyVisualization() {
     return () => clearInterval(timer);
   }, []);
 
+  const stages = [
+    { label: "Plaintext Input", sub: "Salary data entered by employer", icon: Eye, color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20" },
+    { label: "FHE Encryption", sub: "Client-side TFHE encryption", icon: Lock, color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/20" },
+    { label: "On-chain Compute", sub: "Math on encrypted ciphertext", icon: Zap, color: "text-[var(--accent)]", bg: "bg-[rgba(0,229,160,0.1)]", border: "border-[rgba(0,229,160,0.2)]" },
+    { label: "Private Result", sub: "Only employee can decrypt", icon: Shield, color: "text-[var(--accent)]", bg: "bg-[rgba(0,229,160,0.1)]", border: "border-[rgba(0,229,160,0.2)]" },
+  ];
+
+  const current = stages[stage];
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       whileInView={{ opacity: 1, scale: 1 }}
       viewport={{ once: true, margin: "-100px" }}
-      className="relative aspect-square w-full max-w-md lg:ml-auto"
+      className="relative w-full max-w-md lg:ml-auto"
     >
-      {/* Background Glows */}
-      <div className="absolute inset-0 bg-accent/5 blur-[100px] rounded-full" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-full w-full bg-secondary/5 blur-[120px] rounded-full" />
+      {/* Background glow */}
+      <motion.div
+        animate={{
+          opacity: stage >= 2 ? [0.05, 0.15, 0.05] : [0.02, 0.05, 0.02],
+        }}
+        transition={{ duration: 3, repeat: Infinity }}
+        className={`absolute inset-0 -m-8 rounded-3xl blur-[60px] ${
+          stage === 0 ? "bg-red-500" : stage === 1 ? "bg-yellow-400" : "bg-[#00e5a0]"
+        }`}
+      />
 
-      {/* Main Container */}
-      <div className="relative h-full w-full rounded-3xl border border-border bg-card/40 backdrop-blur-2xl shadow-2xl overflow-hidden flex flex-col items-center justify-center p-8">
-        {/* The Shield Icon Centerpiece */}
-        <div className="relative z-10 mb-8 mt-4">
-          <motion.div
-            animate={
-              stage === 2
-                ? {
-                    scale: [1, 1.05, 1],
-                    rotate: [0, 5, -5, 0],
-                  }
-                : { scale: 1, rotate: 0 }
-            }
-            transition={{ duration: 1, repeat: stage === 2 ? Infinity : 0 }}
-            className="relative flex h-32 w-32 items-center justify-center rounded-3xl bg-accent-muted border border-accent/20 shadow-[0_0_30px_rgba(0,229,160,0.1)]"
-          >
-            {/* Spinning ring inside when processing */}
-            {stage === 2 && (
+      <div className="relative rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[#0a0a0f]/90 backdrop-blur-xl overflow-hidden shadow-[0_8px_60px_rgba(0,0,0,0.4)]">
+        {/* Top accent that changes color */}
+        <div
+          className={`h-px w-full transition-all duration-700 ${
+            stage === 0
+              ? "bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"
+              : stage === 1
+                ? "bg-gradient-to-r from-transparent via-yellow-400 to-transparent opacity-50"
+                : "bg-gradient-to-r from-transparent via-[#00e5a0] to-transparent opacity-60"
+          }`}
+        />
+
+        <div className="p-6">
+          {/* Stage indicator dots */}
+          <div className="flex items-center gap-2 mb-6">
+            {stages.map((_, i) => (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1, rotate: 360 }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-2 rounded-full border-2 border-dashed border-accent opacity-30"
+                key={i}
+                animate={{
+                  width: i === stage ? 24 : 6,
+                  backgroundColor: i <= stage ? "#00e5a0" : "rgba(255,255,255,0.1)",
+                }}
+                transition={{ duration: 0.4, ease: EASE }}
+                className="h-1.5 rounded-full"
               />
-            )}
-
-            <AnimatePresence mode="wait">
-              {stage === 0 && (
-                <motion.div
-                  key="unlocked"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.5 }}
-                >
-                  <Lock className="h-12 w-12 text-accent opacity-40" />
-                </motion.div>
-              )}
-              {(stage === 1 || stage === 2) && (
-                <motion.div
-                  key="locked"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.5 }}
-                >
-                  <Shield className="h-14 w-14 text-accent" strokeWidth={1.5} />
-                </motion.div>
-              )}
-              {stage === 3 && (
-                <motion.div
-                  key="sparkle"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.5 }}
-                >
-                  <Sparkles className="h-12 w-12 text-accent" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          {/* Radar Waves */}
-          <div className="absolute inset-0 -z-10 flex items-center justify-center">
-            <motion.div
-              animate={{ scale: [1, 1.8], opacity: [0.3, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="h-32 w-32 rounded-full border border-accent/30"
-            />
+            ))}
           </div>
-        </div>
 
-        {/* Textual Feedback */}
-        <div className="text-center">
+          {/* Central icon */}
+          <div className="flex justify-center mb-6">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={stage}
+                initial={{ opacity: 0, scale: 0.5, rotate: -20 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                exit={{ opacity: 0, scale: 0.5, rotate: 20 }}
+                transition={{ duration: 0.4, ease: EASE }}
+                className={`relative flex h-20 w-20 items-center justify-center rounded-2xl ${current.bg} border ${current.border}`}
+              >
+                <current.icon className={`h-10 w-10 ${current.color}`} />
+
+                {/* Spinning ring when processing */}
+                {stage === 2 && (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-[-4px] rounded-2xl border border-dashed border-[var(--accent)] opacity-30"
+                  />
+                )}
+
+                {/* Pulse ring */}
+                <motion.div
+                  animate={{ scale: [1, 1.5], opacity: [0.3, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className={`absolute inset-0 rounded-2xl border ${current.border}`}
+                />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Stage text */}
           <AnimatePresence mode="wait">
             <motion.div
               key={stage}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.4 }}
+              transition={{ duration: 0.3 }}
+              className="text-center mb-6"
             >
-              <h4 className="text-lg font-bold mb-1">
-                {stage === 0 && "Plaintext Input"}
-                {stage === 1 && "Encrypting Data"}
-                {stage === 2 && "Secured Calculation"}
-                {stage === 3 && "Protected Outcome"}
+              <h4 className="text-base font-bold mb-1" style={{ fontFamily: "var(--font-display)" }}>
+                {current.label}
               </h4>
-              <p className="max-w-60 mx-auto text-sm italic text-text-muted">
-                {stage === 0 && "Salary data ready for processing."}
-                {stage === 1 && "Wrapping data in a privacy shell."}
-                {stage === 2 && "Computing math on ciphertexts."}
-                {stage === 3 && "Credits distributed privately."}
-              </p>
+              <p className="text-xs text-[var(--text-muted)]">{current.sub}</p>
             </motion.div>
           </AnimatePresence>
+
+          {/* Data preview */}
+          <div className="space-y-2">
+            {["Employee", "Salary", "Balance"].map((field, i) => (
+              <div
+                key={field}
+                className="flex items-center justify-between rounded-lg bg-[rgba(255,255,255,0.02)] px-3 py-2"
+              >
+                <span className="text-[11px] text-[var(--text-muted)]">{field}</span>
+                <AnimatePresence mode="wait">
+                  {stage === 0 ? (
+                    <motion.span
+                      key="plain"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0, filter: "blur(6px)" }}
+                      className="text-[11px] font-mono text-red-300/70"
+                    >
+                      {["Alice", "$5,000", "$15,000"][i]}
+                    </motion.span>
+                  ) : stage === 1 ? (
+                    <motion.div
+                      key="encrypting"
+                      className="flex gap-0.5"
+                    >
+                      {[...Array(5)].map((_, j) => (
+                        <motion.span
+                          key={j}
+                          animate={{ opacity: [0.15, 0.5, 0.15] }}
+                          transition={{ duration: 0.6, repeat: Infinity, delay: (i + j) * 0.08 }}
+                          className="inline-block h-3 w-1.5 rounded-sm bg-yellow-400"
+                        />
+                      ))}
+                    </motion.div>
+                  ) : (
+                    <motion.span
+                      key="encrypted"
+                      initial={{ opacity: 0, x: 4 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ delay: i * 0.06 }}
+                      className="flex items-center gap-1 text-[11px] font-mono text-[var(--accent)]"
+                    >
+                      <Lock className="h-2.5 w-2.5" />
+                      0x{Math.random().toString(16).slice(2, 10)}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Floating Data Icons */}
-        <div className="absolute inset-0 pointer-events-none">
-          <FloatingNode
-            delay={0}
-            x="15%"
-            y="20%"
-            icon={<Zap className="h-4 w-4" />}
-            color="text-yellow-400"
-          />
-          <FloatingNode
-            delay={1}
-            x="85%"
-            y="30%"
-            icon={<Lock className="h-4 w-4" />}
-            color="text-accent"
-          />
-          <FloatingNode
-            delay={2}
-            x="20%"
-            y="75%"
-            icon={<EyeOff className="h-4 w-4" />}
-            color="text-secondary"
-          />
-          <FloatingNode
-            delay={3}
-            x="80%"
-            y="80%"
-            icon={<Shield className="h-3 w-3" />}
-            color="text-accent"
-          />
+        {/* Footer */}
+        <div className="px-6 py-3 border-t border-[rgba(255,255,255,0.04)] bg-[rgba(255,255,255,0.01)]">
+          <div className="flex items-center justify-between text-[9px]">
+            <span className="text-[var(--text-muted)] font-mono">Zama fhEVM Coprocessor</span>
+            <span className="text-[var(--accent)] font-bold">TFHE-256</span>
+          </div>
         </div>
       </div>
-
-      {/* External floating elements */}
-      <div className="absolute -top-4 -right-4 h-20 w-20 rounded-2xl bg-accent opacity-[0.03] blur-xl" />
-      <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-secondary opacity-[0.04] blur-2xl" />
-    </motion.div>
-  );
-}
-
-function FloatingNode({
-  x,
-  y,
-  delay,
-  icon,
-  color,
-}: {
-  x: string;
-  y: string;
-  delay: number;
-  icon: React.ReactNode;
-  color: string;
-}) {
-  return (
-    <motion.div
-      initial={{ x, y, rotate: 0, opacity: 0 }}
-      animate={{
-        y: [y, `calc(${y} - 20px)`, y],
-        rotate: [0, 15, -15, 0],
-        opacity: [0, 0.4, 0.4, 0],
-      }}
-      transition={{
-        duration: 6,
-        repeat: Infinity,
-        delay,
-        ease: "easeInOut",
-      }}
-      className={`absolute flex h-8 w-8 items-center justify-center rounded-lg border border-border/50 bg-card/60 backdrop-blur-md ${color} shadow-lg`}
-    >
-      {icon}
     </motion.div>
   );
 }

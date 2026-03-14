@@ -281,6 +281,14 @@ body::before {
   color: var(--text-muted);
 }
 
+/* ═══ Cursor pointer for interactive elements ═══ */
+a[href],
+button:not(:disabled),
+[role="button"],
+summary {
+  cursor: pointer;
+}
+
 /* ═══ Section Spacing ═══ */
 .section-padding {
   padding: 100px 24px;

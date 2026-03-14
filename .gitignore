@@ -7,6 +7,8 @@ node_modules/
 .claude/
 .idea/
 .vscode/
+/.next/
+.next/
 
 # Ignore frontend build files and dependencies if needed globally,
 # though they're already in their own .gitignore.

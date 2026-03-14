@@ -7,7 +7,11 @@ import { Logo } from "@/components/shared/Logo";
 import { WalletConnect } from "@/components/shared/WalletConnect";
 import { DemoMode } from "@/components/shared/DemoMode";
 
-const NAV_LINKS = ["Features", "How it Works", "Security"];
+const NAV_LINKS = [
+  { label: "Problem", href: "#problem" },
+  { label: "Solution", href: "#solution" },
+  { label: "How it Works", href: "#how-it-works" },
+];
 
 export function Navbar() {
   const [showDemo, setShowDemo] = useState(false);
@@ -26,11 +30,11 @@ export function Navbar() {
           <div className="hidden items-center gap-8 md:flex">
             {NAV_LINKS.map((item) => (
               <a
-                key={item}
-                href={`#${item.toLowerCase().replace(/\s+/g, "-")}`}
+                key={item.label}
+                href={item.href}
                 className="text-[13px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
               >
-                {item}
+                {item.label}
               </a>
             ))}
             <button

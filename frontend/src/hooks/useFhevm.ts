@@ -121,9 +121,69 @@ export function useFhevm() {
     [address, walletClient]
   );
 
+  /**
+   * Decrypt multiple encrypted handles in ONE signature request.
+   * Pass an array of { handle, contractAddress } pairs.
+   * Returns a Record<handleHex, decryptedValue>.
+   */
+  const decryptMultiple = useCallback(
+    async (
+      items: { handle: `0x${string}`; contractAddress: `0x${string}` }[]
+    ): Promise<Record<string, bigint | boolean | `0x${string}`>> => {
+      if (!address || !walletClient)
+        throw new Error("Wallet not connected");
+      if (items.length === 0) return {};
+
+      setIsDecrypting(true);
+      try {
+        const instance = await getFhevmInstance();
+        const { publicKey, privateKey } = instance.generateKeypair();
+
+        // Collect unique contract addresses for the EIP712
+        const uniqueContracts = [
+          ...new Set(items.map((i) => i.contractAddress)),
+        ] as `0x${string}`[];
+
+        const now = Math.floor(Date.now() / 1000);
+        const eip712 = instance.createEIP712(
+          publicKey,
+          uniqueContracts,
+          now,
+          1,
+        );
+
+        // ONE signature for all handles
+        const signature = await walletClient.signTypedData({
+          account: address,
+          ...(eip712 as any),
+        });
+
+        console.log(`[useFhevm] Batch decrypting ${items.length} handles with 1 signature`);
+
+        const results = await instance.userDecrypt(
+          items,
+          privateKey,
+          publicKey,
+          signature,
+          uniqueContracts,
+          address,
+          now,
+          1,
+        );
+
+        console.log("[useFhevm] Batch results:", results);
+        return results as Record<string, bigint | boolean | `0x${string}`>;
+      } finally {
+        setIsDecrypting(false);
+      }
+    },
+    [address, walletClient]
+  );
+
   return {
     encryptUint64,
     decryptBalance,
+    decryptMultiple,
     isEncrypting,
     isDecrypting,
     isReady: !!address && !!walletClient,
