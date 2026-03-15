@@ -11,6 +11,8 @@ import {
   Eye,
   Printer,
   CheckCircle2,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { formatUnits } from "viem";
 import { Modal } from "@/components/shared/Modal";
@@ -51,6 +53,7 @@ export function PayslipModal({
   const printRef = useRef<HTMLDivElement>(null);
   const [salary, setSalary] = useState<string | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
+  const [printTheme, setPrintTheme] = useState<"dark" | "light">("dark");
   const [decryptError, setDecryptError] = useState("");
 
   const { decryptBalance, isReady } = useFhevm();
@@ -126,17 +129,20 @@ export function PayslipModal({
           
           :root {
             --accent: #00e5a0;
-            --text-main: #09090b;
-            --text-muted: #71717a;
-            --border: #e4e4e7;
-            --bg-light: #f4f4f5;
+            --text-main: ${printTheme === "dark" ? "#fafafa" : "#09090b"};
+            --text-muted: ${printTheme === "dark" ? "#a1a1aa" : "#71717a"};
+            --border: ${printTheme === "dark" ? "#27272a" : "#e4e4e7"};
+            --bg-light: ${printTheme === "dark" ? "#18181b" : "#f4f4f5"};
+            --bg-page: ${printTheme === "dark" ? "#09090b" : "#ffffff"};
+            --bg-card: ${printTheme === "dark" ? "#0c0c10" : "#ffffff"};
+            --border-card: ${printTheme === "dark" ? "#27272a" : "var(--text-main)"};
           }
 
           * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          
+
           body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #ffffff;
+            background: var(--bg-page);
             color: var(--text-main);
             line-height: 1.5;
           }
@@ -149,9 +155,9 @@ export function PayslipModal({
           }
 
           .payslip {
-            border: 2px solid var(--text-main);
+            border: 2px solid var(--border-card);
             border-radius: 0;
-            background: white;
+            background: var(--bg-card);
             position: relative;
             overflow: hidden;
             box-shadow: none;
@@ -159,7 +165,7 @@ export function PayslipModal({
 
           .header {
             padding: 30px;
-            border-bottom: 2px solid var(--text-main);
+            border-bottom: 2px solid var(--border-card);
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
@@ -750,6 +756,32 @@ export function PayslipModal({
               </p>
             </div>
           )}
+
+          {/* Theme toggle for PDF */}
+          <div className="flex items-center justify-center gap-1 rounded-xl border border-[var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
+            <button
+              onClick={() => setPrintTheme("dark")}
+              className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-all ${
+                printTheme === "dark"
+                  ? "bg-[rgba(0,229,160,0.1)] text-[var(--accent)] border border-[rgba(0,229,160,0.2)]"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+              }`}
+            >
+              <Moon className="h-3.5 w-3.5" />
+              Dark PDF
+            </button>
+            <button
+              onClick={() => setPrintTheme("light")}
+              className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-all ${
+                printTheme === "light"
+                  ? "bg-[rgba(0,229,160,0.1)] text-[var(--accent)] border border-[rgba(0,229,160,0.2)]"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+              }`}
+            >
+              <Sun className="h-3.5 w-3.5" />
+              Light PDF
+            </button>
+          </div>
 
           <button
             onClick={handlePrint}

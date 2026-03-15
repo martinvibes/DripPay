@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Lock, Loader2, Check, ExternalLink, PartyPopper } from "lucide-react";
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { Modal } from "@/components/shared/Modal";
+import { Confetti } from "@/components/shared/Confetti";
 import { EncryptedValue } from "@/components/shared/EncryptedValue";
 import { ORGANIZATION_ABI } from "@/lib/contracts";
 import type { Employee } from "@/lib/mock-data";
@@ -87,6 +88,7 @@ export function PayrollConfirmModal({
       title={isSuccess ? "Payroll Complete" : isExecuting ? "Executing Payroll" : "Confirm Payroll"}
       icon={modalIcon}
     >
+      <Confetti active={isSuccess} />
       <AnimatePresence mode="wait">
         {isSuccess ? (
           /* Success State */
