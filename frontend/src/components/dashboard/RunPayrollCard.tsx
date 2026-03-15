@@ -7,6 +7,7 @@ import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import { ORGANIZATION_ABI } from "@/lib/contracts";
 import { useFhevm } from "@/hooks/useFhevm";
+import { useEthPrice, formatUsd } from "@/hooks/useEthPrice";
 
 interface RunPayrollCardProps {
   onExecute: () => void;
@@ -25,6 +26,8 @@ export function RunPayrollCard({
   tokenSymbol = "ETH",
   tokenDecimals = 18,
 }: RunPayrollCardProps) {
+  const ethPrice = useEthPrice();
+  const isETH = tokenSymbol === "ETH";
   const hasBalance = contractBalance !== undefined && contractBalance > BigInt(0);
   const hasEmployees = activeCount > 0;
   const canExecute = hasBalance && hasEmployees;
@@ -157,6 +160,11 @@ export function RunPayrollCard({
                     {totalCost}
                   </span>
                   <span className="text-xs text-[var(--text-muted)]">{tokenSymbol}</span>
+                  {isETH && ethPrice && totalCost && parseFloat(totalCost.replace(/,/g, "")) > 0 && (
+                    <span className="text-[10px] text-[var(--text-muted)] ml-1">
+                      (~{formatUsd(parseFloat(totalCost.replace(/,/g, "")) * ethPrice)})
+                    </span>
+                  )}
                 </div>
                 {budgetStatus && (
                   <motion.div

@@ -10,10 +10,12 @@ import {
   Check,
   Loader2,
 } from "lucide-react";
+import { useEthPrice, formatUsd } from "@/hooks/useEthPrice";
 
 interface BalanceCardProps {
   balance: string | null;
   tokenSymbol: string;
+  isETH?: boolean;
   isRevealed: boolean;
   isDecrypting: boolean;
   onToggleReveal: () => void;
@@ -22,10 +24,12 @@ interface BalanceCardProps {
 export function BalanceCard({
   balance,
   tokenSymbol,
+  isETH = true,
   isRevealed,
   isDecrypting,
   onToggleReveal,
 }: BalanceCardProps) {
+  const ethPrice = useEthPrice();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -45,17 +49,25 @@ export function BalanceCard({
               </p>
               <div className="flex items-center gap-3 sm:gap-4">
                 {isRevealed && balance !== null ? (
-                  <motion.span
+                  <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl"
-                    style={{ fontFamily: "var(--font-display)" }}
                   >
-                    <span className="gradient-text">{balance}</span>
-                    <span className="ml-2 text-base sm:text-lg text-[var(--text-muted)]">
-                      {tokenSymbol}
+                    <span
+                      className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl"
+                      style={{ fontFamily: "var(--font-display)" }}
+                    >
+                      <span className="gradient-text">{balance}</span>
+                      <span className="ml-2 text-base sm:text-lg text-[var(--text-muted)]">
+                        {tokenSymbol}
+                      </span>
                     </span>
-                  </motion.span>
+                    {isETH && ethPrice && balance && parseFloat(balance.replace(/,/g, "")) > 0 && (
+                      <p className="text-xs text-[var(--text-muted)] mt-1">
+                        ~{formatUsd(parseFloat(balance.replace(/,/g, "")) * ethPrice)} USD
+                      </p>
+                    )}
+                  </motion.div>
                 ) : (
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1">

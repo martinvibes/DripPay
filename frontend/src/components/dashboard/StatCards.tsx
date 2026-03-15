@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Building2, Users, Shield, TrendingUp, Wallet } from "lucide-react";
 import { fadeUpSmall, staggerFast } from "@/lib/animations";
+import { useEthPrice, formatUsd } from "@/hooks/useEthPrice";
 
 interface StatCardsProps {
   orgName?: string;
@@ -102,6 +103,7 @@ const getStatCards = (
   tokenSymbol: string,
   tokenDecimals: number,
   payrollRunCount: number,
+  usdSub: string | null,
 ) => [
   {
     icon: Building2,
@@ -121,7 +123,7 @@ const getStatCards = (
     icon: Wallet,
     label: "Contract Balance",
     value: `${formatBalance(contractBalance, isETH, tokenDecimals)} ${tokenSymbol}`,
-    sub: "Available for withdrawals",
+    sub: usdSub ?? "Available for withdrawals",
     spark: sparkData.growth,
   },
   {
@@ -144,7 +146,16 @@ export function StatCards({
   payrollRunCount = 0,
 }: StatCardsProps) {
   const symbol = tokenSymbol || (isETH ? "ETH" : "TOKEN");
-  const statCards = getStatCards(orgName, employeeCount, activeCount, contractBalance, isETH, symbol, tokenDecimals, payrollRunCount);
+  const ethPrice = useEthPrice();
+
+  // Calculate USD estimate for contract balance
+  let usdSub: string | null = null;
+  if (isETH && ethPrice && contractBalance !== undefined && contractBalance > BigInt(0)) {
+    const ethVal = Number(contractBalance) / 1e18;
+    usdSub = `~${formatUsd(ethVal * ethPrice)} USD`;
+  }
+
+  const statCards = getStatCards(orgName, employeeCount, activeCount, contractBalance, isETH, symbol, tokenDecimals, payrollRunCount, usdSub);
 
   return (
     <motion.div

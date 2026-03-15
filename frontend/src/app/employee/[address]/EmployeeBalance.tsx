@@ -231,6 +231,7 @@ export default function EmployeeBalance({ orgAddress }: { orgAddress: `0x${strin
               <BalanceCard
                 balance={decryptedBalance}
                 tokenSymbol={displaySymbol}
+                isETH={isETH}
                 isRevealed={isBalanceRevealed}
                 isDecrypting={isDecrypting}
                 onToggleReveal={handleRevealBalance}

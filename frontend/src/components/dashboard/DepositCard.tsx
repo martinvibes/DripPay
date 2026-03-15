@@ -7,6 +7,7 @@ import { parseEther } from "viem";
 import { useWaitForTransactionReceipt } from "wagmi";
 import { useERC20 } from "@/hooks/useERC20";
 import { fadeUpSmall } from "@/lib/animations";
+import { useEthPrice, formatUsd } from "@/hooks/useEthPrice";
 
 interface DepositCardProps {
   orgAddress: `0x${string}`;
@@ -91,6 +92,7 @@ export function DepositCard({
   };
 
   const symbol = isETH ? "ETH" : tokenSymbol || "TOKEN";
+  const ethPrice = useEthPrice();
 
   const isWaitingForConfirmation = !!txHash && !isTxConfirmed && !isSuccess;
 
@@ -135,7 +137,9 @@ export function DepositCard({
           {formatBalance(contractBalance)} <span className="text-xs sm:text-sm font-normal text-[var(--text-muted)]">{symbol}</span>
         </p>
         <p className="text-[11px] text-[var(--text-muted)] mb-4">
-          Available for employee withdrawals
+          {isETH && ethPrice && contractBalance !== undefined && contractBalance > BigInt(0)
+            ? `~${formatUsd(Number(contractBalance) / 1e18 * ethPrice)} USD`
+            : "Available for employee withdrawals"}
         </p>
 
         <AnimatePresence mode="wait">
