@@ -50,6 +50,7 @@ const sections: SidebarSection[] = [
   { id: "smart-contracts", label: "Smart Contracts", icon: <FileCode2 className="w-4 h-4" /> },
   { id: "fhe-encryption", label: "FHE Encryption", icon: <Lock className="w-4 h-4" /> },
   { id: "features", label: "Features", icon: <Sparkles className="w-4 h-4" /> },
+  { id: "use-cases", label: "Use Cases", icon: <Globe className="w-4 h-4" /> },
   { id: "faq", label: "FAQ", icon: <HelpCircle className="w-4 h-4" /> },
 ];
 
@@ -985,6 +986,48 @@ console.log("Your balance:", decryptedBalance);`}
               desc="Because running payroll should feel good. Celebratory confetti animation on successful execution."
             />
           </div>
+
+          <div className="my-12" style={{ borderTop: "1px solid var(--border)" }} />
+
+          {/* ═══ USE CASES ═══ */}
+          <SectionHeading id="use-cases">
+            Real-World <span className="gradient-text">Use Cases</span>
+          </SectionHeading>
+          <P>
+            DripPay isn&apos;t just a hackathon demo - it solves real problems for real people across the globe. Here&apos;s who benefits most from confidential on-chain payroll.
+          </P>
+
+          <SubHeading>Emerging Markets with Capital Controls</SubHeading>
+          <P>
+            In countries like <strong>Argentina</strong> and <strong>Nigeria</strong>, strict capital controls make it difficult to receive international payments. Companies already pay contractors in crypto to bypass these limitations. But on a public blockchain, every payment is visible - exposing salary data to governments, competitors, and the public. DripPay encrypts these payments so companies can pay globally while keeping compensation private.
+          </P>
+          <TipBox variant="tip">
+            Argentina has one of the highest crypto adoption rates in the world. Inflation above 200% drives demand for USD-denominated crypto payments. DripPay enables companies to pay Argentine contractors in ETH or stablecoins with full salary privacy.
+          </TipBox>
+
+          <SubHeading>Cross-Border Remote Teams</SubHeading>
+          <P>
+            Distributed teams across different countries face a dilemma: pay on-chain for speed and transparency, but expose everyone&apos;s salary to each other. A senior engineer in the US earning $15k/mo and a junior developer in Southeast Asia earning $2k/mo shouldn&apos;t have to know each other&apos;s compensation. DripPay lets companies pay everyone on the same chain with the same contract - while keeping individual amounts confidential.
+          </P>
+
+          <SubHeading>DAO Contributor Payments</SubHeading>
+          <P>
+            DAOs often pay contributors through public on-chain proposals. This means every community member can see what every contributor earns - leading to compensation disputes, politics, and talent loss. DripPay lets DAOs run payroll where the total budget is verifiable but individual payments are encrypted. The treasury multisig executes payroll, and only each contributor can see their own allocation.
+          </P>
+
+          <SubHeading>Freelancer and Contractor Payments</SubHeading>
+          <P>
+            Freelancers working with multiple clients don&apos;t want Client A to see what Client B pays them. On public blockchains, any client can look up the freelancer&apos;s wallet and see all incoming payments. DripPay ensures that each payment from each organization is encrypted independently - only the freelancer and that specific employer can see the amount.
+          </P>
+
+          <SubHeading>Compliance-Sensitive Industries</SubHeading>
+          <P>
+            Industries like finance, legal, and healthcare have strict rules about compensation privacy. Public blockchain payroll is a non-starter in these sectors. DripPay bridges this gap - salaries are on-chain (auditable, trustless, automated) but encrypted (private, compliant). This opens up on-chain payroll for industries that previously couldn&apos;t consider it.
+          </P>
+
+          <TipBox variant="info">
+            Our roadmap includes <strong>Verifiable Income Proofs</strong> - employees will be able to generate ZK attestations proving their salary falls within a range (e.g., &quot;I earn above $X/month&quot;) without revealing the exact amount. This bridges FHE privacy with real-world needs like mortgage applications, visa proofs, and credit checks.
+          </TipBox>
 
           <div className="my-12" style={{ borderTop: "1px solid var(--border)" }} />
 
