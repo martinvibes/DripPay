@@ -9,9 +9,10 @@
 </p>
 
 <p align="center">
+  <a href="https://drip-payy.xyz">Live App</a> &middot;
+  <a href="https://drip-payy.xyz/docs">Documentation</a> &middot;
   <a href="https://sepolia.etherscan.io/address/0xE7121d656dc7DF514242Ba516AE8a8e061d3336A">Deployed on Sepolia</a> &middot;
-  Built with <a href="https://docs.zama.ai/fhevm">Zama fhEVM</a> &middot;
-  <a href="#quickstart">Get Started</a>
+  Built with <a href="https://docs.zama.ai/fhevm">Zama fhEVM</a>
 </p>
 
 <p align="center">
@@ -92,12 +93,20 @@ DripPay/
 ├── frontend/                    # Next.js application
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── dashboard/       # Employer dashboard
-│   │   │   ├── employee/        # Employee portal
-│   │   │   └── api/             # API routes
-│   │   ├── components/          # UI components
-│   │   ├── hooks/               # React hooks (useOrganization, useFhevm)
-│   │   └── lib/                 # Contracts, ABIs, utilities
+│   │   │   ├── dashboard/            # Employer org list
+│   │   │   ├── dashboard/[address]/  # Org detail dashboard
+│   │   │   ├── employee/             # Employee org list
+│   │   │   ├── employee/[address]/   # Employee balance view
+│   │   │   ├── docs/                 # Documentation (gitbook-style)
+│   │   │   ├── not-found.tsx         # Custom 404 page
+│   │   │   └── api/chat/             # AI chatbot API
+│   │   ├── components/
+│   │   │   ├── dashboard/            # Employer components
+│   │   │   ├── employee/             # Employee components
+│   │   │   ├── landing/              # Landing page sections
+│   │   │   └── shared/               # Shared (Modal, Confetti, etc.)
+│   │   ├── hooks/                    # useOrganization, useFhevm, useEthPrice
+│   │   └── lib/                      # Contracts, ABIs, animations
 │   └── public/
 │
 └── README.md                    # You are here
@@ -210,18 +219,23 @@ Open [http://localhost:3000](http://localhost:3000).
 ### As an Employer
 
 1. Connect wallet on `/dashboard`
-2. Create a new organization (choose ETH or ERC-20)
-3. Add employees — enter wallet addresses and salary amounts (encrypted before tx)
+2. Create a new organization (name, ETH or ERC-20, payroll cycle)
+3. Add employees - enter wallet addresses and salary amounts (FHE-encrypted before tx). Supports CSV bulk import.
 4. Deposit funds into the org contract
-5. Hit "Execute Payroll" — encrypted salaries credited to all employees
+5. Click "Reveal Salaries" to bulk-decrypt all salaries with one wallet signature
+6. Click "Execute Payroll" - encrypted salaries credited to all employees with confetti celebration
+7. View payroll schedule with countdown to next payroll date
+8. Update salaries, check budget, download receipts, export history (PDF/CSV)
+9. Each org has a unique URL (`/dashboard/0x...`) - bookmarkable and refresh-safe
 
 ### As an Employee
 
 1. Connect wallet on `/employee`
-2. Your organizations appear automatically (no contract address needed)
-3. Click an org to view your encrypted balance
-4. "Decrypt Balance" — sign with your wallet, see your actual balance
-5. Withdraw funds whenever you want
+2. Your organizations appear automatically (auto-discovery, no contract address needed)
+3. Click an org - navigates to `/employee/0x...` (bookmarkable)
+4. "Decrypt & View" - sign with your wallet, see your actual balance with USD estimate
+5. Download payslips per payroll run (dark/light PDF themes)
+6. Withdraw funds and export transaction history whenever you want
 
 ---
 
@@ -290,20 +304,30 @@ Built for **PL Genesis: Frontiers of Collaboration** (March 2026).
 
 - [x] Encrypted salary storage and batch payroll (FHE.add on ciphertext)
 - [x] Employee auto-discovery (factory indexes employees, no CA sharing needed)
-- [x] Salary reveal for admins (per-employee and bulk "Reveal All Salaries")
+- [x] Salary reveal for admins (bulk "Reveal All Salaries" with one wallet signature)
 - [x] Encrypted total payroll cost (FHE sum of all salaries, admin-decryptable)
 - [x] Confidential budget check (FHE comparison: balance vs total payroll)
 - [x] Salary updates (re-encrypt and update any employee's salary)
-- [x] Encrypted payslips and receipts (per-event, printable/PDF)
-- [x] Full history export (PDF and CSV)
-- [x] Interactive demo mode (guided walkthrough, no wallet needed)
+- [x] Encrypted payslips and receipts (per-event, dark/light PDF themes)
+- [x] Full history export (PDF and CSV with formatted reports)
+- [x] Interactive demo mode (guided 4-step walkthrough, no wallet needed)
+- [x] Multi-currency USD estimates (live ETH/USD price from CoinGecko)
+- [x] Payroll scheduling (one-time, weekly, bi-weekly, monthly with countdown)
+- [x] Confetti celebration on payroll execution
+- [x] URL-based routing (/dashboard/[address], /employee/[address]) - bookmarkable, refresh-safe
+- [x] Custom 404 page with DripPay branding
+- [x] Comprehensive documentation (/docs) with gitbook-style sidebar navigation
+- [x] AI chatbot assistant with knowledge of all DripPay features
+- [x] Per-employee delete with on-chain confirmation tracking
+- [x] Wallet disconnect detection on detail pages
 
 ### Roadmap
 
 - [ ] **Phase 2: Verifiable Income Proofs** - The biggest unsolved problem in confidential payroll. Salaries are private, but employees still need to _prove_ their income to banks, landlords, embassies, and lenders. We plan to integrate ZK attestations so employees can generate proofs like "my salary is above $X/month" without revealing the exact amount. The flow: decrypt salary client-side, generate a ZK proof (Circom/Noir) over the plaintext, third parties verify the proof on-chain against the encrypted handle. This bridges FHE privacy with real-world verifiability.
 - [ ] **Phase 3: Confidential Fundraising** - Teams and DAOs raise funds on-chain with individual contribution amounts encrypted, but totals publicly verifiable using FHE aggregation
-- [ ] Recurring payroll (time-based auto-execution via Chainlink Keepers)
+- [ ] Recurring payroll auto-execution via Chainlink Automation
 - [ ] Multi-sig admin support (require N-of-M approvals to run payroll)
+- [ ] ERC-7984 token integration
 - [ ] Mainnet deployment
 
 ---

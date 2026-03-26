@@ -21,8 +21,8 @@ interface Message {
 
 const QUICK_QUESTIONS = [
   { icon: HelpCircle, label: "What is DripPay?" },
-  { icon: Lock, label: "How is my salary private?" },
-  { icon: Wallet, label: "How do I view my balance?" },
+  { icon: Lock, label: "How does FHE keep salaries private?" },
+  { icon: Wallet, label: "How do I get started as an employer?" },
 ];
 
 export function ChatWidget() {
