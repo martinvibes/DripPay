@@ -11,6 +11,7 @@ import { StatCards } from "@/components/dashboard/StatCards";
 import { EmployeeTable } from "@/components/dashboard/EmployeeTable";
 import { RunPayrollCard } from "@/components/dashboard/RunPayrollCard";
 import { PayrollHistory } from "@/components/dashboard/PayrollHistory";
+import { PayrollScheduleCard } from "@/components/dashboard/PayrollScheduleCard";
 import { AddEmployeeModal } from "@/components/dashboard/AddEmployeeModal";
 import { UpdateSalaryModal } from "@/components/dashboard/UpdateSalaryModal";
 import { PayrollConfirmModal } from "@/components/dashboard/PayrollConfirmModal";
@@ -86,15 +87,17 @@ export default function OrgDashboard({ address: orgAddress }: { address: `0x${st
     localStorage.setItem(key, JSON.stringify(meta));
   };
 
-  // Get last payroll timestamp
-  const lastPayrollTimestamp = payrollEvents.length > 0
+  // Get last payroll timestamp (raw seconds + formatted)
+  const lastPayrollTimestampSec = payrollEvents.length > 0
     ? (() => {
         const args = payrollEvents[0].args as Record<string, any>;
         const ts = args?.timestamp;
-        if (!ts) return null;
-        const date = new Date(Number(ts) * 1000);
-        return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        return ts ? Number(ts) : null;
       })()
+    : null;
+
+  const lastPayrollTimestamp = lastPayrollTimestampSec
+    ? new Date(lastPayrollTimestampSec * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" })
     : null;
 
   const employees: Employee[] = (contractEmployees ?? []).map((addr, i) => {
@@ -268,6 +271,10 @@ export default function OrgDashboard({ address: orgAddress }: { address: `0x${st
                 txHash={orgTxHash}
                 resetTx={resetTx}
                 refetchBalance={refetchBalance}
+              />
+              <PayrollScheduleCard
+                orgAddress={orgAddress}
+                lastPayrollTimestampSec={lastPayrollTimestampSec}
               />
               <RunPayrollCard
                 onExecute={() => setShowPayrollConfirm(true)}

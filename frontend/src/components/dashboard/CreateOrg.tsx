@@ -2,10 +2,17 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, ArrowRight, Loader2, Coins } from "lucide-react";
+import { Building2, ArrowRight, Loader2, Coins, Calendar } from "lucide-react";
+
+const PAYROLL_CYCLES = [
+  { label: "One-time", days: 0, desc: "Manual execution only" },
+  { label: "Weekly", days: 7, desc: "Every 7 days" },
+  { label: "Bi-weekly", days: 14, desc: "Every 14 days" },
+  { label: "Monthly", days: 30, desc: "Every 30 days" },
+] as const;
 
 interface CreateOrgProps {
-  onOrgCreated: (name: string, paymentToken: `0x${string}`) => void;
+  onOrgCreated: (name: string, paymentToken: `0x${string}`, payrollCycleDays: number) => void;
   isDeploying?: boolean;
 }
 
@@ -15,13 +22,14 @@ export function CreateOrg({ onOrgCreated, isDeploying = false }: CreateOrgProps)
   const [orgName, setOrgName] = useState("");
   const [tokenType, setTokenType] = useState<"eth" | "erc20">("eth");
   const [tokenAddress, setTokenAddress] = useState("");
+  const [payrollCycle, setPayrollCycle] = useState(30);
 
   const handleCreate = () => {
     if (!orgName.trim() || isDeploying) return;
     const paymentToken = tokenType === "eth"
       ? ZERO_ADDRESS
       : (tokenAddress.trim() as `0x${string}`);
-    onOrgCreated(orgName.trim(), paymentToken);
+    onOrgCreated(orgName.trim(), paymentToken, payrollCycle);
   };
 
   const isValid = orgName.trim() && (tokenType === "eth" || tokenAddress.trim().startsWith("0x"));
@@ -126,6 +134,34 @@ export function CreateOrg({ onOrgCreated, isDeploying = false }: CreateOrgProps)
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Payroll Cycle */}
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-[var(--text-secondary)]">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-[var(--accent)]" />
+                    Payroll Cycle
+                  </span>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {PAYROLL_CYCLES.map((cycle) => (
+                    <button
+                      key={cycle.days}
+                      type="button"
+                      onClick={() => setPayrollCycle(cycle.days)}
+                      disabled={isDeploying}
+                      className={`flex flex-col items-center rounded-xl border px-3 py-2.5 text-center transition-all ${
+                        payrollCycle === cycle.days
+                          ? "border-[var(--border-accent)] bg-[rgba(0,229,160,0.06)] text-[var(--accent)]"
+                          : "border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-[var(--border-hover)]"
+                      }`}
+                    >
+                      <span className="text-xs font-semibold">{cycle.label}</span>
+                      <span className="text-[10px] text-[var(--text-muted)] mt-0.5">{cycle.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <button
                 onClick={handleCreate}

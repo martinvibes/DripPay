@@ -117,6 +117,16 @@ export default function DashboardListPage() {
       refetchOrgNames();
       refetchOrgCreatedAt();
       refetchOrgEmployees();
+
+      // Save payroll schedule for the newly created org
+      const newOrgAddr = orgAddresses?.[currentCount - 1];
+      if (newOrgAddr && typeof window !== "undefined") {
+        const key = `drippay_schedule_${newOrgAddr.toLowerCase()}`;
+        localStorage.setItem(key, JSON.stringify({
+          intervalDays: pendingCycleDays,
+          lastRunTimestamp: null,
+        }));
+      }
     }
     prevOrgCountRef.current = currentCount;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,7 +137,10 @@ export default function DashboardListPage() {
     router.push(`/dashboard/${addr}`);
   };
 
-  const handleCreateOrg = (name: string, paymentToken: `0x${string}`) => {
+  const [pendingCycleDays, setPendingCycleDays] = useState(30);
+
+  const handleCreateOrg = (name: string, paymentToken: `0x${string}`, payrollCycleDays: number) => {
+    setPendingCycleDays(payrollCycleDays);
     createOrganization(name, paymentToken);
   };
 

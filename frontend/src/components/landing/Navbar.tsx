@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Play } from "lucide-react";
+import { Play, BookOpen } from "lucide-react";
+import Link from "next/link";
 import { Logo } from "@/components/shared/Logo";
 import { WalletConnect } from "@/components/shared/WalletConnect";
 import { DemoMode } from "@/components/shared/DemoMode";
@@ -37,6 +38,13 @@ export function Navbar() {
                 {item.label}
               </a>
             ))}
+            <Link
+              href="/docs"
+              className="flex items-center gap-1.5 text-[13px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
+            >
+              <BookOpen className="h-3 w-3" />
+              Docs
+            </Link>
             <button
               onClick={() => setShowDemo(true)}
               className="flex items-center gap-1.5 text-[13px] font-medium text-[var(--accent)] transition-colors hover:text-[var(--accent-hover)]"

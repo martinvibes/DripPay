@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRightLeft } from "lucide-react";
+import { ArrowRightLeft, BookOpen } from "lucide-react";
 import { Logo } from "./Logo";
 import { WalletConnect } from "./WalletConnect";
 
@@ -21,6 +21,13 @@ export function AppNav({ label, altLink }: AppNavProps) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <Link
+            href="/docs"
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:border-[var(--border-accent)] hover:text-[var(--accent)] hover:bg-[rgba(0,229,160,0.04)] transition-all duration-200"
+          >
+            <BookOpen className="h-3 w-3" />
+            <span className="hidden sm:inline">Docs</span>
+          </Link>
           <Link
             href={altLink.href}
             className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:border-[var(--border-accent)] hover:text-[var(--accent)] hover:bg-[rgba(0,229,160,0.04)] transition-all duration-200"
